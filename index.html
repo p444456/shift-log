@@ -116,7 +116,7 @@
   .pick.st-doing{color:var(--st-doing);border-color:#bcdbe2;background-color:#eef7f9;}
   .pick.st-done{color:var(--st-done);border-color:#bfe0d1;background-color:#edf6f1;}
   .pick.hs-doing{color:var(--st-doing);border-color:#bcdbe2;background-color:#eef7f9;}
-  .pick.hs-supp{color:#c9772a;border-color:#e6cfae;background-color:#fdf5ea;}
+  .pick.hs-supp{color:#fff;border-color:var(--danger);background-color:var(--danger);background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round'/></svg>");}
   .rec-acts{flex:none;display:flex;gap:2px;align-items:center;}
   .rec-edit{flex:none;background:none;border:none;color:var(--shift);font-size:13px;padding:4px 6px;border-radius:6px;}
   .rec-edit:hover{background:#eef0f4;}
@@ -323,6 +323,7 @@
 
   /* ================= 進入 / 離開 ================= */
   function enterApp(){
+    saveSession();
     document.documentElement.style.setProperty("--shift", SHIFT_COLOR[current.shift]);
     curShift.textContent=current.shift; curPerson.textContent=current.person;
     loginView.style.display="none"; appView.style.display="flex";
@@ -341,6 +342,7 @@
     Array.prototype.forEach.call(btns, function(b){ b.style.display= on?"":"none"; });
   }
   logoutBtn.addEventListener("click", function(){
+    clearSession();
     stopPoll(); stopWarn(); current=null; records=[]; logs=[];
     appView.style.display="none"; loginView.style.display="flex";
     pwd.value=""; person.value=""; content.value="";
@@ -577,6 +579,22 @@
     return d.getFullYear()+"/"+p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes()); }
   function fmtShort(ts){ var d=new Date(ts),p=function(n){return(n<10?"0":"")+n;};
     return p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes()); }
+
+  /* ================= 登入身分暫存（刷新不登出） ================= */
+  var SESSION_KEY="shift-session-v1";
+  function saveSession(){ try{ sessionStorage.setItem(SESSION_KEY, JSON.stringify(current)); }catch(e){} }
+  function clearSession(){ try{ sessionStorage.removeItem(SESSION_KEY); }catch(e){} }
+  function loadSession(){ try{ var r=sessionStorage.getItem(SESSION_KEY); return r?JSON.parse(r):null; }catch(e){ return null; } }
+
+  // 頁面載入時，若先前已登入則自動恢復（不必重新輸入密碼）
+  (function restore(){
+    var s=loadSession();
+    if(s && s.shift && STAFF[s.shift] && s.person){
+      current={ shift:s.shift, person:s.person };
+      selectedShift=s.shift;
+      enterApp();
+    }
+  })();
 })();
 </script>
 </body>
