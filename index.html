@@ -289,6 +289,7 @@
   var STATUS_CLASS = { "待處理":"st-todo", "已給資料":"st-done" };
   var CLAIMS = ["處理中","補單中"];
   var WARN_MS = 5*60*1000; // 「已給資料」超過此時間開始閃爍（5 分鐘）
+  var ARCHIVE_TTL_MS = 24*60*60*1000; // 已結案保留 24 小時後自動刪除
 
   // 把「已給資料」的時間偷偷記在狀態字串裡，後端不用改
   function encodeStatus(base){ return base==="已給資料" ? ("已給資料@@"+Date.now()) : base; }
@@ -415,7 +416,7 @@
       loadCloud(true); startPoll();
     }else{
       showRefresh(false); setStatus("local","單機模式：紀錄只存在這台裝置");
-      records=loadLocal(REC_KEY); logs=pruneLogs(loadLocal(LOG_KEY)); renderAll();
+      records=pruneArchivedLocal(loadLocal(REC_KEY)); saveLocal(REC_KEY,records); logs=pruneLogs(loadLocal(LOG_KEY)); renderAll();
     }
   }
   function showRefresh(on){
@@ -522,10 +523,23 @@
     if(first) list.innerHTML='<div class="empty"><div class="big">⏳</div>載入中…</div>';
     var btns=document.querySelectorAll(".recRefresh"); Array.prototype.forEach.call(btns,function(b){ b.classList.add("spin"); });
     cloudList().then(function(res){
-      if(res && res.ok){ records=res.records||[]; logs=res.logs||[]; setStatus("cloud","共用模式：已連線"); renderAll(); }
+      if(res && res.ok){ records=res.records||[]; logs=res.logs||[]; setStatus("cloud","共用模式：已連線"); renderAll(); purgeArchived(); }
       else{ setStatus("err","讀取失敗，請按重新整理再試"); }
     }).catch(function(){ setStatus("err","連線失敗，請確認 API 網址與網路"); })
       .then(function(){ var b2=document.querySelectorAll(".recRefresh"); Array.prototype.forEach.call(b2,function(b){ b.classList.remove("spin"); }); });
+  }
+  // 已結案逾 24 小時：自動從資料庫刪除（串行刪、刪完再刷新）
+  function purgeArchived(){
+    if(!USE_CLOUD || syncing) return;
+    var now=Date.now();
+    var expired=records.filter(function(r){ var t=archivedAt(r); return t && (now-t)>ARCHIVE_TTL_MS; });
+    if(expired.length===0) return;
+    var i=0;
+    (function next(){
+      if(i>=expired.length){ loadCloud(false); return; }
+      var r=expired[i++];
+      cloudSend({action:"delete", id:r.id}).then(next).catch(next);
+    })();
   }
   document.addEventListener("click", function(e){ if(e.target.closest(".recRefresh") && USE_CLOUD) loadCloud(false); });
   function startPoll(){ stopPoll(); pollTimer=setInterval(function(){ if(USE_CLOUD && current && !editing && !syncing) loadCloud(false); }, POLL_MS); }
@@ -540,13 +554,15 @@
     logs=pruneLogs(logs); saveLocal(LOG_KEY,logs);
   }
   function pruneLogs(arr){ var now=Date.now(); return (arr||[]).filter(function(l){ return now-Number(l.time) <= LOG_TTL_MS; }); }
+  function pruneArchivedLocal(arr){ var now=Date.now(); return (arr||[]).filter(function(r){ var t=archivedAt(r); return !(t && (now-t)>ARCHIVE_TTL_MS); }); }
 
   /* ================= 顯示 ================= */
   filter.addEventListener("change", renderRecords);
   search.addEventListener("input", renderRecords);
   function renderAll(){ renderRecords(); renderLogs(); }
 
-  function isArchived(r){ return r.archived==="1" || r.archived===1 || r.archived===true; }
+  function isArchived(r){ var a=r.archived; return !!a && a!=="0"; }
+  function archivedAt(r){ var t=Number(r.archived); return t>1e12 ? t : 0; } // 只認合理的時間戳
 
   function renderRecords(){
     var f=filter.value;
@@ -578,7 +594,7 @@
       var body=document.createElement("div"); body.className="rec-body"; body.textContent=r.content;
 
       var ps=parseStatus(r.status); var baseStatus=ps.base;
-      el.dataset.base=baseStatus; el.dataset.at=ps.at||0; el.dataset.handler=r.handler||"";
+      el.dataset.base=baseStatus; el.dataset.at=ps.at||0; el.dataset.handler=r.handler||""; el.dataset.archived=isArchived(r)?"1":"";
 
       var fields=document.createElement("div"); fields.className="rec-fields";
       // 狀態
@@ -619,7 +635,7 @@
         var closeBtn=document.createElement("button"); closeBtn.className="rec-close"; closeBtn.textContent="結案";
         closeBtn.addEventListener("click", function(){
           if(!confirm("將這筆結案（歸檔）？之後可到「已結案」查看或還原。")) return;
-          updateField(r.id,"archived","1");
+          updateField(r.id,"archived",String(Date.now()));
         });
         acts.appendChild(editBtn); acts.appendChild(closeBtn);
       }
@@ -662,7 +678,7 @@
     Array.prototype.forEach.call(cards, function(el){
       var base=el.dataset.base, at=Number(el.dataset.at)||0;
       var claimed=!!(el.dataset.handler||"");
-      var warn = (base==="已給資料" && at && (now-at)>=WARN_MS && !claimed);
+      var warn = (base==="已給資料" && at && (now-at)>=WARN_MS && !claimed && el.dataset.archived!=="1");
       el.classList.toggle("warn", warn);
     });
     updateCounts();
