@@ -102,8 +102,9 @@
   .tag[data-shift="晚班"]{background:var(--wan);}
   .rec-person{font-size:13px;font-weight:700;color:var(--ink);}
   .rec-time{font-size:12px;color:var(--ink-soft);margin-left:auto;}
-  .rec-body{font-size:15.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word;margin-bottom:12px;}
-  .rec-fields{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .rec-main{display:flex;align-items:center;gap:14px;}
+  .rec-body{flex:1;min-width:0;font-size:15.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
+  .rec-fields{flex:none;display:flex;gap:10px;align-items:center;}
   .minifield{display:flex;align-items:center;gap:6px;}
   .minifield .k{font-size:12px;color:var(--ink-soft);}
   .pick{appearance:none;border:1px solid var(--line);border-radius:999px;padding:5px 26px 5px 11px;font-size:13px;font-weight:700;background:#fbfaf7;color:var(--ink);cursor:pointer;
@@ -111,9 +112,21 @@
   .pick.st-todo{color:var(--st-todo);border-color:#e6cfae;background-color:#fdf5ea;}
   .pick.st-doing{color:var(--st-doing);border-color:#bcdbe2;background-color:#eef7f9;}
   .pick.st-done{color:var(--st-done);border-color:#bfe0d1;background-color:#edf6f1;}
-  .rec-foot{display:flex;justify-content:flex-end;margin-top:8px;}
-  .rec-del{background:none;border:none;color:var(--ink-soft);font-size:13px;padding:4px 6px;border-radius:6px;}
+  .rec-acts{flex:none;display:flex;gap:2px;align-items:center;}
+  .rec-edit{flex:none;background:none;border:none;color:var(--shift);font-size:13px;padding:4px 6px;border-radius:6px;}
+  .rec-edit:hover{background:#eef0f4;}
+  .rec-del{flex:none;background:none;border:none;color:var(--ink-soft);font-size:13px;padding:4px 6px;border-radius:6px;}
   .rec-del:hover{color:var(--danger);background:#faf0ef;}
+  .edit-box{flex:1;min-width:0;}
+  .edit-ta{width:100%;min-height:62px;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:15px;font-family:inherit;resize:vertical;background:#fbfaf7;color:var(--ink);line-height:1.5;}
+  .edit-row{display:flex;justify-content:flex-end;gap:8px;margin-top:8px;}
+  .edit-save{border:none;border-radius:8px;padding:7px 16px;background:var(--shift);color:#fff;font-size:13px;font-weight:700;}
+  .edit-cancel{border:1px solid var(--line);border-radius:8px;padding:7px 14px;background:var(--card);color:var(--ink-soft);font-size:13px;}
+  @media(max-width:600px){
+    .rec-main{flex-direction:column;align-items:stretch;gap:10px;}
+    .rec-fields{flex-wrap:wrap;}
+    .rec-acts{align-self:flex-end;}
+  }
 
   /* 操作日誌 */
   .loghint{font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;}
@@ -252,7 +265,7 @@
   var USE_CLOUD = API_URL.trim() !== "";
 
   /* ================= 狀態 ================= */
-  var selectedShift="", current=null, records=[], logs=[], pollTimer=null;
+  var selectedShift="", current=null, records=[], logs=[], pollTimer=null, editing=false;
 
   /* ================= 元素 ================= */
   var $=function(id){ return document.getElementById(id); };
@@ -378,9 +391,11 @@
   /* ================= 更新狀態 / 處理人員 ================= */
   function updateField(id, field, value){
     var r=findRec(id); if(!r) return;
-    var logText = field==="status"
-      ? "將「"+summ(r.content)+"」狀態改為 "+value
-      : "將「"+summ(r.content)+"」處理人員改為 "+(value||"未指派");
+    var logText;
+    if(field==="status")      logText="將「"+summ(r.content)+"」狀態改為 "+value;
+    else if(field==="handler")logText="將「"+summ(r.content)+"」處理人員改為 "+(value||"未指派");
+    else if(field==="content")logText="修改事由「"+summ(r.content)+"」→「"+summ(value)+"」";
+    else                      logText="更新「"+summ(r.content)+"」";
     if(USE_CLOUD){
       setStatus("cloud","更新中…");
       cloudSend({action:"update", id:id, field:field, value:value, byShift:current.shift, byPerson:current.person, log:logText}).then(applyRes).catch(cloudErr);
@@ -411,7 +426,7 @@
       .then(function(){ var b2=document.querySelectorAll(".recRefresh"); Array.prototype.forEach.call(b2,function(b){ b.classList.remove("spin"); }); });
   }
   document.addEventListener("click", function(e){ if(e.target.closest(".recRefresh") && USE_CLOUD) loadCloud(false); });
-  function startPoll(){ stopPoll(); pollTimer=setInterval(function(){ if(USE_CLOUD && current) loadCloud(false); }, POLL_MS); }
+  function startPoll(){ stopPoll(); pollTimer=setInterval(function(){ if(USE_CLOUD && current && !editing) loadCloud(false); }, POLL_MS); }
   function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
   function setStatus(kind,text){ statusBox.className="status "+kind; statusText.textContent=text; }
 
@@ -465,12 +480,39 @@
 
       fields.appendChild(sf); fields.appendChild(hf);
 
-      var foot=document.createElement("div"); foot.className="rec-foot";
       var del=document.createElement("button"); del.className="rec-del"; del.textContent="刪除";
       del.addEventListener("click", function(){ delRecord(r.id); });
-      foot.appendChild(del);
 
-      el.appendChild(meta); el.appendChild(body); el.appendChild(fields); el.appendChild(foot);
+      var editBtn=document.createElement("button"); editBtn.className="rec-edit"; editBtn.textContent="編輯";
+      var acts=document.createElement("div"); acts.className="rec-acts";
+      acts.appendChild(editBtn); acts.appendChild(del);
+
+      var main=document.createElement("div"); main.className="rec-main";
+      main.appendChild(body); main.appendChild(fields); main.appendChild(acts);
+
+      editBtn.addEventListener("click", function(){
+        editing=true;
+        var box=document.createElement("div"); box.className="edit-box";
+        var ta=document.createElement("textarea"); ta.className="edit-ta"; ta.value=r.content;
+        var row=document.createElement("div"); row.className="edit-row";
+        var cancel=document.createElement("button"); cancel.className="edit-cancel"; cancel.textContent="取消";
+        var save=document.createElement("button"); save.className="edit-save"; save.textContent="儲存";
+        row.appendChild(cancel); row.appendChild(save);
+        box.appendChild(ta); box.appendChild(row);
+        main.replaceChild(box, body);
+        fields.style.display="none"; acts.style.display="none";
+        ta.focus();
+        cancel.addEventListener("click", function(){ editing=false; renderRecords(); });
+        save.addEventListener("click", function(){
+          var nv=ta.value.trim();
+          if(!nv){ ta.focus(); return; }
+          editing=false;
+          if(nv===r.content){ renderRecords(); return; }
+          updateField(r.id,"content",nv);
+        });
+      });
+
+      el.appendChild(meta); el.appendChild(main);
       list.appendChild(el);
     });
   }
