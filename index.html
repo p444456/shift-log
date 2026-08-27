@@ -276,7 +276,7 @@
   var USE_CLOUD = API_URL.trim() !== "";
 
   /* ================= 狀態 ================= */
-  var selectedShift="", current=null, records=[], logs=[], pollTimer=null, editing=false;
+  var selectedShift="", current=null, records=[], logs=[], pollTimer=null, editing=false, syncing=false;
 
   /* ================= 元素 ================= */
   var $=function(id){ return document.getElementById(id); };
@@ -375,10 +375,11 @@
       status:encodeStatus(newStatus.value), handler:handlerVal };
     var logText="新增事項「"+summ(text)+"」";
     if(USE_CLOUD){
-      addBtn.disabled=true; addBtn.textContent="登記中…";
+      records.unshift(rec); renderAll();                       // 立即顯示
+      content.value=""; newStatus.value=STATUSES[0]; newHandler.value=""; addBtn.disabled=true;
+      syncing=true; setStatus("cloud","同步中…");
       cloudSend({action:"add", id:rec.id, content:rec.content, shift:rec.shift, person:rec.person, time:rec.time, status:rec.status, handler:rec.handler, log:logText})
-        .then(applyRes).catch(cloudErr)
-        .then(function(){ addBtn.textContent="登記事項"; content.value=""; newStatus.value=STATUSES[0]; newHandler.value=""; addBtn.disabled=true; });
+        .then(applyRes).catch(syncErr);
     }else{
       records.unshift(rec); saveLocal(REC_KEY,records);
       addLocalLog(logText);
@@ -393,8 +394,9 @@
     if(!confirm("確定刪除這筆紀錄？")) return;
     var logText="刪除事項「"+summ(r.content)+"」";
     if(USE_CLOUD){
-      setStatus("cloud","刪除中…");
-      cloudSend({action:"delete", id:id, byShift:current.shift, byPerson:current.person, log:logText}).then(applyRes).catch(cloudErr);
+      records=records.filter(function(x){ return x.id!==id; }); renderAll();  // 立即移除
+      syncing=true; setStatus("cloud","同步中…");
+      cloudSend({action:"delete", id:id, byShift:current.shift, byPerson:current.person, log:logText}).then(applyRes).catch(syncErr);
     }else{
       records=records.filter(function(x){ return x.id!==id; }); saveLocal(REC_KEY,records);
       addLocalLog(logText); renderAll();
@@ -410,8 +412,9 @@
     else if(field==="content")logText="修改事由「"+summ(r.content)+"」→「"+summ(value)+"」";
     else                      logText="更新「"+summ(r.content)+"」";
     if(USE_CLOUD){
-      setStatus("cloud","更新中…");
-      cloudSend({action:"update", id:id, field:field, value:value, byShift:current.shift, byPerson:current.person, log:logText}).then(applyRes).catch(cloudErr);
+      r[field]=value; renderAll();                            // 立即套用
+      syncing=true; setStatus("cloud","同步中…");
+      cloudSend({action:"update", id:id, field:field, value:value, byShift:current.shift, byPerson:current.person, log:logText}).then(applyRes).catch(syncErr);
     }else{
       r[field]=value; saveLocal(REC_KEY,records);
       addLocalLog(logText); renderAll();
@@ -425,9 +428,11 @@
     return fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)}).then(function(r){ return r.json(); });
   }
   function applyRes(res){
-    if(res && res.ok){ records=res.records||[]; logs=res.logs||[]; setStatus("cloud","共用模式：已連線"); renderAll(); }
-    else{ setStatus("err","操作失敗，請重新整理再試"); }
+    syncing=false;
+    if(res && res.ok){ records=res.records||[]; logs=res.logs||[]; setStatus("cloud","已同步"); renderAll(); }
+    else{ setStatus("err","同步失敗，正在重新整理…"); loadCloud(false); }
   }
+  function syncErr(){ syncing=false; setStatus("err","同步較慢或失敗，正在重新整理…"); loadCloud(false); }
   function cloudErr(){ setStatus("err","連線失敗，請檢查網路後重試"); }
   function loadCloud(first){
     if(first) list.innerHTML='<div class="empty"><div class="big">⏳</div>載入中…</div>';
@@ -439,7 +444,7 @@
       .then(function(){ var b2=document.querySelectorAll(".recRefresh"); Array.prototype.forEach.call(b2,function(b){ b.classList.remove("spin"); }); });
   }
   document.addEventListener("click", function(e){ if(e.target.closest(".recRefresh") && USE_CLOUD) loadCloud(false); });
-  function startPoll(){ stopPoll(); pollTimer=setInterval(function(){ if(USE_CLOUD && current && !editing) loadCloud(false); }, POLL_MS); }
+  function startPoll(){ stopPoll(); pollTimer=setInterval(function(){ if(USE_CLOUD && current && !editing && !syncing) loadCloud(false); }, POLL_MS); }
   function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
   function setStatus(kind,text){ statusBox.className="status "+kind; statusText.textContent=text; }
 
@@ -476,7 +481,7 @@
       var body=document.createElement("div"); body.className="rec-body"; body.textContent=r.content;
 
       var ps=parseStatus(r.status); var baseStatus=ps.base;
-      el.dataset.base=baseStatus; el.dataset.at=ps.at||0;
+      el.dataset.base=baseStatus; el.dataset.at=ps.at||0; el.dataset.handler=r.handler||"";
 
       var fields=document.createElement("div"); fields.className="rec-fields";
       // 狀態
@@ -546,7 +551,8 @@
     var cards=list.querySelectorAll(".rec");
     Array.prototype.forEach.call(cards, function(el){
       var base=el.dataset.base, at=Number(el.dataset.at)||0;
-      var warn = (base==="已給資料" && at && (now-at)>=WARN_MS);
+      var claimed=!!(el.dataset.handler||"");
+      var warn = (base==="已給資料" && at && (now-at)>=WARN_MS && !claimed);
       el.classList.toggle("warn", warn);
     });
   }
