@@ -6,35 +6,20 @@
 <title>四方相通</title>
 <style>
   :root{
-    --bg:#f5f4ef;
-    --card:#ffffff;
-    --ink:#26262e;
-    --ink-soft:#6b6b78;
-    --line:#e6e4dd;
-    --brand:#3a4a63;
-    --brand-ink:#ffffff;
-    --danger:#b3453c;
-    --ok:#2f8f6b;
-    --zao:#e0912f;
-    --zhong:#3d8ea0;
-    --wan:#5a5686;
-    --shift:var(--brand);
-    --radius:14px;
-    --shadow:0 6px 24px rgba(30,30,45,.08);
+    --bg:#f5f4ef; --card:#ffffff; --ink:#26262e; --ink-soft:#6b6b78;
+    --line:#e6e4dd; --brand:#3a4a63; --brand-ink:#ffffff; --danger:#b3453c; --ok:#2f8f6b;
+    --zao:#e0912f; --zhong:#3d8ea0; --wan:#5a5686;
+    --st-todo:#c9772a; --st-doing:#2f7d90; --st-done:#2f8f6b;
+    --shift:var(--brand); --radius:14px; --shadow:0 6px 24px rgba(30,30,45,.08);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
-  body{
-    font-family:"PingFang TC","PingFang SC","Microsoft JhengHei","Microsoft YaHei",-apple-system,"Segoe UI",sans-serif;
-    background:var(--bg);color:var(--ink);
-    -webkit-font-smoothing:antialiased;line-height:1.5;
-  }
+  body{font-family:"PingFang TC","PingFang SC","Microsoft JhengHei","Microsoft YaHei",-apple-system,"Segoe UI",sans-serif;
+    background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5;}
   button{font-family:inherit;cursor:pointer;}
-  button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{
-    outline:2px solid var(--shift);outline-offset:2px;
-  }
+  button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--shift);outline-offset:2px;}
 
-  /* ---------- 登入畫面 ---------- */
+  /* ---------- 登入 ---------- */
   #login-view{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;}
   .login-card{width:100%;max-width:400px;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
   .shift-band{height:8px;background:linear-gradient(90deg,var(--zao),var(--zhong),var(--wan));transition:background .4s ease;}
@@ -43,29 +28,22 @@
   .login-sub{color:var(--ink-soft);font-size:14px;margin:0 0 26px;}
   .field{margin-bottom:18px;}
   .field label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:7px;letter-spacing:.02em;}
-  input[type="password"],select{
-    width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:10px;
-    background:#fbfaf7;color:var(--ink);font-size:16px;
-  }
-  select{appearance:none;
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%236b6b78' stroke-width='1.6' stroke-linecap='round'/></svg>");
-    background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
+  input[type="password"],select{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:10px;background:#fbfaf7;color:var(--ink);font-size:16px;}
+  select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%236b6b78' stroke-width='1.6' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
   select:disabled{opacity:.5;cursor:not-allowed;}
   .shift-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-  .shift-tab{padding:12px 4px;border:1px solid var(--line);border-radius:10px;background:#fbfaf7;
-    color:var(--ink-soft);font-size:15px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:5px;transition:.15s;}
+  .shift-tab{padding:12px 4px;border:1px solid var(--line);border-radius:10px;background:#fbfaf7;color:var(--ink-soft);font-size:15px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:5px;transition:.15s;}
   .shift-tab .ico{font-size:20px;line-height:1;}
   .shift-tab[aria-pressed="true"]{color:#fff;border-color:transparent;}
   .shift-tab[data-shift="早班"][aria-pressed="true"]{background:var(--zao);}
   .shift-tab[data-shift="中班"][aria-pressed="true"]{background:var(--zhong);}
   .shift-tab[data-shift="晚班"][aria-pressed="true"]{background:var(--wan);}
-  .btn-primary{width:100%;padding:14px;border:none;border-radius:10px;background:var(--shift);
-    color:var(--brand-ink);font-size:16px;font-weight:700;letter-spacing:.06em;transition:background .3s ease,filter .15s;}
+  .btn-primary{width:100%;padding:14px;border:none;border-radius:10px;background:var(--shift);color:var(--brand-ink);font-size:16px;font-weight:700;letter-spacing:.06em;transition:background .3s ease,filter .15s;}
   .btn-primary:hover{filter:brightness(1.06);}
   .btn-primary:disabled{background:#c9c7bf;cursor:not-allowed;}
   .login-msg{min-height:20px;margin-top:12px;font-size:13px;color:var(--danger);text-align:center;}
 
-  /* ---------- 記錄畫面 ---------- */
+  /* ---------- 主畫面 ---------- */
   #app-view{display:none;min-height:100dvh;flex-direction:column;}
   .topbar{background:var(--shift);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:12px;transition:background .3s ease;}
   .who{display:flex;align-items:center;gap:9px;min-width:0;}
@@ -74,23 +52,29 @@
   .topbar .spacer{flex:1;}
   .logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:13px;padding:7px 12px;border-radius:8px;}
   .logout:hover{background:rgba(255,255,255,.28);}
-  .wrap{max-width:720px;width:100%;margin:0 auto;padding:20px 16px 60px;}
+  .wrap{max-width:760px;width:100%;margin:0 auto;padding:18px 16px 60px;}
 
-  /* 連線狀態列 */
   .status{font-size:12.5px;padding:8px 12px;border-radius:9px;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
   .status .dot{width:8px;height:8px;border-radius:50%;flex:none;}
-  .status.cloud{background:#eaf5f0;color:#256b52;}
-  .status.cloud .dot{background:var(--ok);}
-  .status.local{background:#fbf3e6;color:#8a5a12;}
-  .status.local .dot{background:var(--zao);}
-  .status.err{background:#faeceb;color:#93362e;}
-  .status.err .dot{background:var(--danger);}
+  .status.cloud{background:#eaf5f0;color:#256b52;} .status.cloud .dot{background:var(--ok);}
+  .status.local{background:#fbf3e6;color:#8a5a12;} .status.local .dot{background:var(--zao);}
+  .status.err{background:#faeceb;color:#93362e;} .status.err .dot{background:var(--danger);}
 
-  .composer{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:20px;}
-  .composer textarea{width:100%;min-height:78px;resize:vertical;border:1px solid var(--line);border-radius:10px;
-    background:#fbfaf7;padding:12px 13px;font-size:16px;color:var(--ink);font-family:inherit;line-height:1.6;}
-  .composer-row{display:flex;justify-content:flex-end;margin-top:10px;}
-  .btn-add{padding:11px 22px;border:none;border-radius:9px;background:var(--shift);color:#fff;font-size:15px;font-weight:700;transition:background .3s ease,filter .15s;}
+  /* 分頁 */
+  .tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:18px;}
+  .tab{background:none;border:none;padding:11px 16px 12px;font-size:15px;font-weight:700;color:var(--ink-soft);position:relative;letter-spacing:.03em;}
+  .tab[aria-selected="true"]{color:var(--shift);}
+  .tab[aria-selected="true"]::after{content:"";position:absolute;left:12px;right:12px;bottom:-2px;height:2px;background:var(--shift);border-radius:2px;}
+  .pane{display:none;} .pane.on{display:block;}
+
+  /* 登記表單 */
+  .composer{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:22px;}
+  .composer .clabel{font-size:13px;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.02em;}
+  .composer textarea{width:100%;min-height:72px;resize:vertical;border:1px solid var(--line);border-radius:10px;background:#fbfaf7;padding:12px 13px;font-size:16px;color:var(--ink);font-family:inherit;line-height:1.6;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
+  .form-grid select{width:100%;padding:11px 34px 11px 12px;border:1px solid var(--line);border-radius:10px;background:#fbfaf7;font-size:15px;color:var(--ink);}
+  .composer-row{display:flex;justify-content:flex-end;margin-top:14px;}
+  .btn-add{padding:11px 24px;border:none;border-radius:9px;background:var(--shift);color:#fff;font-size:15px;font-weight:700;transition:background .3s ease,filter .15s;}
   .btn-add:hover{filter:brightness(1.06);}
   .btn-add:disabled{background:#c9c7bf;cursor:not-allowed;}
 
@@ -99,47 +83,67 @@
   .count{color:var(--ink-soft);font-size:13px;}
   .head-tools{margin-left:auto;display:flex;align-items:center;gap:8px;}
   .refresh{border:1px solid var(--line);background:var(--card);color:var(--ink-soft);font-size:13px;padding:7px 12px;border-radius:8px;}
-  .refresh:hover{color:var(--ink);}
-  .refresh.spin{opacity:.6;pointer-events:none;}
-  .filter select{width:auto;padding:7px 30px 7px 11px;font-size:14px;background-color:var(--card);}
+  .refresh:hover{color:var(--ink);} .refresh.spin{opacity:.6;pointer-events:none;}
+  .filter select{width:auto;padding:7px 30px 7px 11px;font-size:14px;background-color:var(--card);border:1px solid var(--line);border-radius:8px;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%236b6b78' stroke-width='1.6' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 10px center;}
 
-  .empty{text-align:center;color:var(--ink-soft);padding:48px 20px;background:var(--card);border-radius:var(--radius);border:1px dashed var(--line);}
+  .empty{text-align:center;color:var(--ink-soft);padding:44px 20px;background:var(--card);border-radius:var(--radius);border:1px dashed var(--line);}
   .empty .big{font-size:34px;margin-bottom:8px;}
 
-  .rec{background:var(--card);border-radius:12px;box-shadow:0 3px 12px rgba(30,30,45,.05);padding:14px 15px;margin-bottom:11px;border-left:4px solid var(--line);animation:pop .18s ease;}
+  /* 紀錄卡 */
+  .rec{background:var(--card);border-radius:12px;box-shadow:0 3px 12px rgba(30,30,45,.05);padding:15px 16px;margin-bottom:12px;border-left:4px solid var(--line);animation:pop .18s ease;}
   @keyframes pop{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
   .rec[data-shift="早班"]{border-left-color:var(--zao);}
   .rec[data-shift="中班"]{border-left-color:var(--zhong);}
   .rec[data-shift="晚班"]{border-left-color:var(--wan);}
-  .rec-meta{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap;}
+  .rec-meta{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap;}
   .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;color:#fff;}
   .tag[data-shift="早班"]{background:var(--zao);}
   .tag[data-shift="中班"]{background:var(--zhong);}
   .tag[data-shift="晚班"]{background:var(--wan);}
   .rec-person{font-size:13px;font-weight:700;color:var(--ink);}
   .rec-time{font-size:12px;color:var(--ink-soft);margin-left:auto;}
-  .rec-body{font-size:15px;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
-  .rec-del{background:none;border:none;color:var(--ink-soft);font-size:13px;padding:4px 6px;margin-top:6px;border-radius:6px;}
+  .rec-body{font-size:15.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word;margin-bottom:12px;}
+  .rec-fields{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .minifield{display:flex;align-items:center;gap:6px;}
+  .minifield .k{font-size:12px;color:var(--ink-soft);}
+  .pick{appearance:none;border:1px solid var(--line);border-radius:999px;padding:5px 26px 5px 11px;font-size:13px;font-weight:700;background:#fbfaf7;color:var(--ink);cursor:pointer;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%236b6b78' stroke-width='1.6' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 9px center;}
+  .pick.st-todo{color:var(--st-todo);border-color:#e6cfae;background-color:#fdf5ea;}
+  .pick.st-doing{color:var(--st-doing);border-color:#bcdbe2;background-color:#eef7f9;}
+  .pick.st-done{color:var(--st-done);border-color:#bfe0d1;background-color:#edf6f1;}
+  .rec-foot{display:flex;justify-content:flex-end;margin-top:8px;}
+  .rec-del{background:none;border:none;color:var(--ink-soft);font-size:13px;padding:4px 6px;border-radius:6px;}
   .rec-del:hover{color:var(--danger);background:#faf0ef;}
 
-  @media(max-width:480px){.login-inner{padding:26px 22px 30px;}}
+  /* 操作日誌 */
+  .loghint{font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;}
+  .log{display:flex;gap:10px;align-items:baseline;background:var(--card);border-radius:10px;padding:11px 13px;margin-bottom:8px;box-shadow:0 2px 8px rgba(30,30,45,.04);}
+  .log-time{font-size:12px;color:var(--ink-soft);white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .log-who{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;color:#fff;white-space:nowrap;}
+  .log-who[data-shift="早班"]{background:var(--zao);}
+  .log-who[data-shift="中班"]{background:var(--zhong);}
+  .log-who[data-shift="晚班"]{background:var(--wan);}
+  .log-act{font-size:14px;color:var(--ink);word-break:break-word;}
+
+  @media(max-width:520px){
+    .form-grid{grid-template-columns:1fr;}
+    .login-inner{padding:26px 22px 30px;}
+  }
 </style>
 </head>
 <body>
 
-<!-- ============ 登入畫面 ============ -->
+<!-- ============ 登入 ============ -->
 <section id="login-view">
   <div class="login-card">
     <div class="shift-band" id="band"></div>
     <div class="login-inner">
       <h1 class="login-title">四方相通</h1>
       <p class="login-sub">請輸入密碼並選擇班別與人員後登入</p>
-
       <div class="field">
         <label for="pwd">密碼</label>
         <input type="password" id="pwd" placeholder="請輸入密碼" autocomplete="off" inputmode="numeric">
       </div>
-
       <div class="field">
         <label>班別</label>
         <div class="shift-tabs" id="shiftTabs">
@@ -148,25 +152,20 @@
           <button type="button" class="shift-tab" data-shift="晚班" aria-pressed="false"><span class="ico">🌙</span>晚班</button>
         </div>
       </div>
-
       <div class="field">
         <label for="person">人員</label>
         <select id="person" disabled><option value="">請先選擇班別</option></select>
       </div>
-
       <button class="btn-primary" id="loginBtn" disabled>登　入</button>
       <div class="login-msg" id="loginMsg"></div>
     </div>
   </div>
 </section>
 
-<!-- ============ 記錄畫面 ============ -->
+<!-- ============ 主畫面 ============ -->
 <section id="app-view">
   <div class="topbar" id="topbar">
-    <div class="who">
-      <span class="badge" id="curShift">—</span>
-      <span class="who-name" id="curPerson">—</span>
-    </div>
+    <div class="who"><span class="badge" id="curShift">—</span><span class="who-name" id="curPerson">—</span></div>
     <span class="spacer"></span>
     <button class="logout" id="logoutBtn">登出</button>
   </div>
@@ -174,30 +173,61 @@
   <div class="wrap">
     <div class="status" id="status"><span class="dot"></span><span id="statusText">—</span></div>
 
-    <div class="composer">
-      <textarea id="content" placeholder="輸入要登記的事項…（例如：交班備註、待處理事項）"></textarea>
-      <div class="composer-row">
-        <button class="btn-add" id="addBtn" disabled>登記事項</button>
-      </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" id="tab-records" role="tab" aria-selected="true">登記紀錄</button>
+      <button class="tab" id="tab-logs" role="tab" aria-selected="false">操作日誌</button>
     </div>
 
-    <div class="list-head">
-      <h2>登記紀錄</h2>
-      <span class="count" id="count"></span>
-      <div class="head-tools">
-        <button class="refresh" id="refreshBtn" title="重新整理">↻ 重新整理</button>
-        <div class="filter">
-          <select id="filter">
-            <option value="all">全部班別</option>
-            <option value="早班">只看早班</option>
-            <option value="中班">只看中班</option>
-            <option value="晚班">只看晚班</option>
-          </select>
+    <!-- 登記紀錄分頁 -->
+    <div class="pane on" id="pane-records">
+      <div class="composer">
+        <div class="clabel">事由</div>
+        <textarea id="content" placeholder="輸入要登記的事項…（例如：交班備註、待處理事項）"></textarea>
+        <div class="form-grid">
+          <div>
+            <div class="clabel">處理狀態</div>
+            <select id="newStatus"></select>
+          </div>
+          <div>
+            <div class="clabel">處理人員</div>
+            <select id="newHandler"></select>
+          </div>
+        </div>
+        <div class="composer-row">
+          <button class="btn-add" id="addBtn" disabled>登記事項</button>
         </div>
       </div>
+
+      <div class="list-head">
+        <h2>登記紀錄</h2>
+        <span class="count" id="count"></span>
+        <div class="head-tools">
+          <button class="refresh recRefresh" title="重新整理">↻ 重新整理</button>
+          <div class="filter">
+            <select id="filter">
+              <option value="all">全部班別</option>
+              <option value="早班">只看早班</option>
+              <option value="中班">只看中班</option>
+              <option value="晚班">只看晚班</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="list"></div>
     </div>
 
-    <div id="list"></div>
+    <!-- 操作日誌分頁 -->
+    <div class="pane" id="pane-logs">
+      <div class="list-head">
+        <h2>操作日誌</h2>
+        <span class="count" id="logCount"></span>
+        <div class="head-tools">
+          <button class="refresh recRefresh" title="重新整理">↻ 重新整理</button>
+        </div>
+      </div>
+      <div class="loghint">逐筆記錄每個人的操作，超過 24 小時的自動清除。</div>
+      <div id="logList"></div>
+    </div>
   </div>
 </section>
 
@@ -205,197 +235,200 @@
 (function(){
   "use strict";
 
-  /* ==================================================================
-     設定區（只有這兩行需要你自己改）
-     ------------------------------------------------------------------
-     PASSWORD  : 登入密碼
-     API_URL   : 你部署的 Google Apps Script 網址
-                 · 留空 ""            → 單機模式（各自的瀏覽器各存一份）
-                 · 貼上網址           → 共用模式（所有人共用同一份）
-     ================================================================== */
+  /* ================= 設定 ================= */
   var PASSWORD = "123456";
   var API_URL  = "https://script.google.com/macros/s/AKfycbwTOlnm-ZBd_cCZmvoGxxG4gBCyGmx_AF6Ip9obX2_G-BViNzLJea3SPLkcQcdaX7fGHw/exec";
 
-  /* ====== 其餘設定 ====== */
-  var STORE_KEY = "shift-records-v1";
-  var POLL_MS = 20000; // 共用模式下每 20 秒自動抓一次最新
-  var STAFF = {
-    "早班": ["TT","佩佩","PATTY","77","YUEE","猪猪"],
-    "中班": ["阿信","軒軒","小楓"],
-    "晚班": ["小乐","阿睿","HO"]
-  };
+  var REC_KEY = "shift-records-v2";
+  var LOG_KEY = "shift-logs-v2";
+  var POLL_MS = 20000;
+  var LOG_TTL_MS = 24*60*60*1000;
+  var STAFF = { "早班":["TT","佩佩","PATTY","77","YUEE","猪猪"], "中班":["阿信","軒軒","小楓"], "晚班":["小乐","阿睿","HO"] };
+  var STATUSES = ["待處理","處理中","已完成"];
+  var STATUS_CLASS = { "待處理":"st-todo", "處理中":"st-doing", "已完成":"st-done" };
+
+  var ALL_STAFF = [];
+  Object.keys(STAFF).forEach(function(k){ STAFF[k].forEach(function(n){ ALL_STAFF.push(n); }); });
   var USE_CLOUD = API_URL.trim() !== "";
 
-  /* ====== 狀態 ====== */
-  var selectedShift = "";
-  var current = null;
-  var records = [];
-  var pollTimer = null;
+  /* ================= 狀態 ================= */
+  var selectedShift="", current=null, records=[], logs=[], pollTimer=null;
 
-  /* ====== 元素 ====== */
-  var $ = function(id){ return document.getElementById(id); };
+  /* ================= 元素 ================= */
+  var $=function(id){ return document.getElementById(id); };
   var pwd=$("pwd"), person=$("person"), loginBtn=$("loginBtn"), loginMsg=$("loginMsg"),
       shiftTabs=$("shiftTabs"), band=$("band"), loginView=$("login-view"), appView=$("app-view"),
       curShift=$("curShift"), curPerson=$("curPerson"), logoutBtn=$("logoutBtn"),
-      content=$("content"), addBtn=$("addBtn"), list=$("list"), count=$("count"),
-      filter=$("filter"), refreshBtn=$("refreshBtn"),
-      statusBox=$("status"), statusText=$("statusText");
+      content=$("content"), newStatus=$("newStatus"), newHandler=$("newHandler"), addBtn=$("addBtn"),
+      list=$("list"), count=$("count"), filter=$("filter"),
+      logList=$("logList"), logCount=$("logCount"),
+      statusBox=$("status"), statusText=$("statusText"),
+      tabRecords=$("tab-records"), tabLogs=$("tab-logs"),
+      paneRecords=$("pane-records"), paneLogs=$("pane-logs");
+  var SHIFT_COLOR={ "早班":"var(--zao)", "中班":"var(--zhong)", "晚班":"var(--wan)" };
 
-  var SHIFT_COLOR = { "早班":"var(--zao)", "中班":"var(--zhong)", "晚班":"var(--wan)" };
+  /* 填充登記表單的下拉 */
+  STATUSES.forEach(function(s){ var o=document.createElement("option"); o.value=s; o.textContent=s; newStatus.appendChild(o); });
+  (function(){
+    var o0=document.createElement("option"); o0.value=""; o0.textContent="未指派"; newHandler.appendChild(o0);
+    ALL_STAFF.forEach(function(n){ var o=document.createElement("option"); o.value=n; o.textContent=n; newHandler.appendChild(o); });
+  })();
 
   /* ================= 登入 ================= */
   shiftTabs.addEventListener("click", function(e){
-    var btn = e.target.closest(".shift-tab");
-    if(!btn) return;
-    selectedShift = btn.dataset.shift;
-    Array.prototype.forEach.call(shiftTabs.children, function(b){
-      b.setAttribute("aria-pressed", b === btn ? "true":"false");
-    });
-    band.style.background = SHIFT_COLOR[selectedShift];
+    var btn=e.target.closest(".shift-tab"); if(!btn) return;
+    selectedShift=btn.dataset.shift;
+    Array.prototype.forEach.call(shiftTabs.children, function(b){ b.setAttribute("aria-pressed", b===btn?"true":"false"); });
+    band.style.background=SHIFT_COLOR[selectedShift];
     document.documentElement.style.setProperty("--shift", SHIFT_COLOR[selectedShift]);
-    person.disabled = false;
-    person.innerHTML = '<option value="">請選擇人員</option>';
-    STAFF[selectedShift].forEach(function(name){
-      var o=document.createElement("option"); o.value=name; o.textContent=name; person.appendChild(o);
-    });
+    person.disabled=false; person.innerHTML='<option value="">請選擇人員</option>';
+    STAFF[selectedShift].forEach(function(name){ var o=document.createElement("option"); o.value=name; o.textContent=name; person.appendChild(o); });
     refreshLoginBtn();
   });
-
   pwd.addEventListener("input", refreshLoginBtn);
   person.addEventListener("change", refreshLoginBtn);
-  function refreshLoginBtn(){
-    loginMsg.textContent="";
-    loginBtn.disabled = !(pwd.value && selectedShift && person.value);
-  }
+  function refreshLoginBtn(){ loginMsg.textContent=""; loginBtn.disabled=!(pwd.value && selectedShift && person.value); }
   loginBtn.addEventListener("click", doLogin);
   pwd.addEventListener("keydown", function(e){ if(e.key==="Enter" && !loginBtn.disabled) doLogin(); });
-
   function doLogin(){
-    if(pwd.value !== PASSWORD){
-      loginMsg.textContent="密碼錯誤，請重新輸入";
-      pwd.value=""; pwd.focus(); refreshLoginBtn(); return;
-    }
+    if(pwd.value!==PASSWORD){ loginMsg.textContent="密碼錯誤，請重新輸入"; pwd.value=""; pwd.focus(); refreshLoginBtn(); return; }
     if(!selectedShift || !person.value){ loginMsg.textContent="請選擇班別與人員"; return; }
-    current = { shift:selectedShift, person:person.value };
+    current={ shift:selectedShift, person:person.value };
     enterApp();
   }
 
   /* ================= 進入 / 離開 ================= */
   function enterApp(){
     document.documentElement.style.setProperty("--shift", SHIFT_COLOR[current.shift]);
-    curShift.textContent = current.shift;
-    curPerson.textContent = current.person;
-    loginView.style.display="none";
-    appView.style.display="flex";
-    content.focus();
-    window.scrollTo(0,0);
-
+    curShift.textContent=current.shift; curPerson.textContent=current.person;
+    loginView.style.display="none"; appView.style.display="flex";
+    content.focus(); window.scrollTo(0,0);
     if(USE_CLOUD){
-      refreshBtn.style.display="";
-      setStatus("cloud","連線共用資料庫中…");
-      loadCloud(true);
-      startPoll();
+      showRefresh(true); setStatus("cloud","連線共用資料庫中…");
+      loadCloud(true); startPoll();
     }else{
-      refreshBtn.style.display="none";
-      setStatus("local","單機模式：紀錄只存在這台裝置");
-      records = loadLocal();
-      render();
+      showRefresh(false); setStatus("local","單機模式：紀錄只存在這台裝置");
+      records=loadLocal(REC_KEY); logs=pruneLogs(loadLocal(LOG_KEY)); renderAll();
     }
   }
-
+  function showRefresh(on){
+    var btns=document.querySelectorAll(".recRefresh");
+    Array.prototype.forEach.call(btns, function(b){ b.style.display= on?"":"none"; });
+  }
   logoutBtn.addEventListener("click", function(){
-    stopPoll();
-    current=null; records=[];
-    appView.style.display="none";
-    loginView.style.display="flex";
+    stopPoll(); current=null; records=[]; logs=[];
+    appView.style.display="none"; loginView.style.display="flex";
     pwd.value=""; person.value=""; content.value="";
     person.disabled=true; person.innerHTML='<option value="">請先選擇班別</option>';
     selectedShift="";
     Array.prototype.forEach.call(shiftTabs.children, function(b){ b.setAttribute("aria-pressed","false"); });
     band.style.background="linear-gradient(90deg,var(--zao),var(--zhong),var(--wan))";
     document.documentElement.style.setProperty("--shift","var(--brand)");
-    refreshLoginBtn();
-    window.scrollTo(0,0);
+    switchTab("records"); refreshLoginBtn(); window.scrollTo(0,0);
   });
 
-  /* ================= 新增 / 刪除 ================= */
-  content.addEventListener("input", function(){ addBtn.disabled = content.value.trim()===""; });
-  addBtn.addEventListener("click", addRecord);
+  /* ================= 分頁切換 ================= */
+  tabRecords.addEventListener("click", function(){ switchTab("records"); });
+  tabLogs.addEventListener("click", function(){ switchTab("logs"); });
+  function switchTab(which){
+    var isRec = which==="records";
+    tabRecords.setAttribute("aria-selected", isRec?"true":"false");
+    tabLogs.setAttribute("aria-selected", isRec?"false":"true");
+    paneRecords.classList.toggle("on", isRec);
+    paneLogs.classList.toggle("on", !isRec);
+  }
 
+  /* ================= 新增 ================= */
+  content.addEventListener("input", function(){ addBtn.disabled=content.value.trim()===""; });
+  addBtn.addEventListener("click", addRecord);
+  function summ(t){ t=t.replace(/\s+/g," ").trim(); return t.length>16 ? t.slice(0,16)+"…" : t; }
   function addRecord(){
-    var text=content.value.trim();
-    if(!text || !current) return;
-    var rec = {
-      id: Date.now()+"-"+Math.random().toString(36).slice(2,7),
-      content:text, shift:current.shift, person:current.person, time:Date.now()
-    };
+    var text=content.value.trim(); if(!text || !current) return;
+    var rec={ id:Date.now()+"-"+Math.random().toString(36).slice(2,7), content:text,
+      shift:current.shift, person:current.person, time:Date.now(),
+      status:newStatus.value, handler:newHandler.value };
+    var logText="新增事項「"+summ(text)+"」";
     if(USE_CLOUD){
       addBtn.disabled=true; addBtn.textContent="登記中…";
-      cloudSend({action:"add", id:rec.id, content:rec.content, shift:rec.shift, person:rec.person, time:rec.time})
-        .then(function(res){
-          if(res && res.ok){ records=res.records||[]; content.value=""; setStatus("cloud","已同步"); render(); }
-          else{ setStatus("err","登記失敗，請再試一次"); }
-        })
-        .catch(function(){ setStatus("err","連線失敗，請檢查網路後重試"); })
-        .then(function(){ addBtn.textContent="登記事項"; addBtn.disabled = content.value.trim()===""; });
+      cloudSend({action:"add", id:rec.id, content:rec.content, shift:rec.shift, person:rec.person, time:rec.time, status:rec.status, handler:rec.handler, log:logText})
+        .then(applyRes).catch(cloudErr)
+        .then(function(){ addBtn.textContent="登記事項"; content.value=""; newStatus.value=STATUSES[0]; newHandler.value=""; addBtn.disabled=true; });
     }else{
-      records.unshift(rec); saveLocal(); content.value=""; addBtn.disabled=true; render();
+      records.unshift(rec); saveLocal(REC_KEY,records);
+      addLocalLog(logText);
+      content.value=""; newStatus.value=STATUSES[0]; newHandler.value=""; addBtn.disabled=true;
+      renderAll();
     }
   }
 
+  /* ================= 刪除 ================= */
   function delRecord(id){
+    var r=findRec(id); if(!r) return;
     if(!confirm("確定刪除這筆紀錄？")) return;
+    var logText="刪除事項「"+summ(r.content)+"」";
     if(USE_CLOUD){
       setStatus("cloud","刪除中…");
-      cloudSend({action:"delete", id:id})
-        .then(function(res){
-          if(res && res.ok){ records=res.records||[]; setStatus("cloud","已同步"); render(); }
-          else{ setStatus("err","刪除失敗，請再試一次"); }
-        })
-        .catch(function(){ setStatus("err","連線失敗，請檢查網路後重試"); });
+      cloudSend({action:"delete", id:id, byShift:current.shift, byPerson:current.person, log:logText}).then(applyRes).catch(cloudErr);
     }else{
-      records=records.filter(function(r){ return r.id!==id; }); saveLocal(); render();
+      records=records.filter(function(x){ return x.id!==id; }); saveLocal(REC_KEY,records);
+      addLocalLog(logText); renderAll();
     }
   }
 
-  /* ================= 共用模式：連線 ================= */
-  function cloudList(){
-    return fetch(API_URL, {method:"GET"}).then(function(r){ return r.json(); });
+  /* ================= 更新狀態 / 處理人員 ================= */
+  function updateField(id, field, value){
+    var r=findRec(id); if(!r) return;
+    var logText = field==="status"
+      ? "將「"+summ(r.content)+"」狀態改為 "+value
+      : "將「"+summ(r.content)+"」處理人員改為 "+(value||"未指派");
+    if(USE_CLOUD){
+      setStatus("cloud","更新中…");
+      cloudSend({action:"update", id:id, field:field, value:value, byShift:current.shift, byPerson:current.person, log:logText}).then(applyRes).catch(cloudErr);
+    }else{
+      r[field]=value; saveLocal(REC_KEY,records);
+      addLocalLog(logText); renderAll();
+    }
   }
+  function findRec(id){ for(var i=0;i<records.length;i++){ if(records[i].id===id) return records[i]; } return null; }
+
+  /* ================= 共用模式連線 ================= */
+  function cloudList(){ return fetch(API_URL,{method:"GET"}).then(function(r){ return r.json(); }); }
   function cloudSend(payload){
-    return fetch(API_URL, {
-      method:"POST",
-      headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body: JSON.stringify(payload)
-    }).then(function(r){ return r.json(); });
+    return fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)}).then(function(r){ return r.json(); });
   }
+  function applyRes(res){
+    if(res && res.ok){ records=res.records||[]; logs=res.logs||[]; setStatus("cloud","共用模式：已連線"); renderAll(); }
+    else{ setStatus("err","操作失敗，請重新整理再試"); }
+  }
+  function cloudErr(){ setStatus("err","連線失敗，請檢查網路後重試"); }
   function loadCloud(first){
     if(first) list.innerHTML='<div class="empty"><div class="big">⏳</div>載入中…</div>';
-    refreshBtn.classList.add("spin");
-    cloudList()
-      .then(function(res){
-        if(res && res.ok){ records=res.records||[]; setStatus("cloud","共用模式：已連線"); render(); }
-        else{ setStatus("err","讀取失敗，請按重新整理再試"); }
-      })
-      .catch(function(){ setStatus("err","連線失敗，請確認 API 網址與網路"); })
-      .then(function(){ refreshBtn.classList.remove("spin"); });
+    var btns=document.querySelectorAll(".recRefresh"); Array.prototype.forEach.call(btns,function(b){ b.classList.add("spin"); });
+    cloudList().then(function(res){
+      if(res && res.ok){ records=res.records||[]; logs=res.logs||[]; setStatus("cloud","共用模式：已連線"); renderAll(); }
+      else{ setStatus("err","讀取失敗，請按重新整理再試"); }
+    }).catch(function(){ setStatus("err","連線失敗，請確認 API 網址與網路"); })
+      .then(function(){ var b2=document.querySelectorAll(".recRefresh"); Array.prototype.forEach.call(b2,function(b){ b.classList.remove("spin"); }); });
   }
-  refreshBtn.addEventListener("click", function(){ if(USE_CLOUD) loadCloud(false); });
+  document.addEventListener("click", function(e){ if(e.target.closest(".recRefresh") && USE_CLOUD) loadCloud(false); });
   function startPoll(){ stopPoll(); pollTimer=setInterval(function(){ if(USE_CLOUD && current) loadCloud(false); }, POLL_MS); }
   function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
+  function setStatus(kind,text){ statusBox.className="status "+kind; statusText.textContent=text; }
 
-  function setStatus(kind, text){
-    statusBox.className = "status "+kind;
-    statusText.textContent = text;
+  /* ================= 單機模式儲存 ================= */
+  function saveLocal(key,val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+  function loadLocal(key){ try{ var r=localStorage.getItem(key); return r?JSON.parse(r):[]; }catch(e){ return []; } }
+  function addLocalLog(text){
+    logs.unshift({ time:Date.now(), shift:current.shift, person:current.person, action:text });
+    logs=pruneLogs(logs); saveLocal(LOG_KEY,logs);
   }
-
-  /* ================= 單機模式：本機儲存 ================= */
-  function saveLocal(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(records)); }catch(e){} }
-  function loadLocal(){ try{ var r=localStorage.getItem(STORE_KEY); return r?JSON.parse(r):[]; }catch(e){ return []; } }
+  function pruneLogs(arr){ var now=Date.now(); return (arr||[]).filter(function(l){ return now-Number(l.time) <= LOG_TTL_MS; }); }
 
   /* ================= 顯示 ================= */
-  filter.addEventListener("change", render);
-  function render(){
+  filter.addEventListener("change", renderRecords);
+  function renderAll(){ renderRecords(); renderLogs(); }
+
+  function renderRecords(){
     var f=filter.value;
     var shown=records.filter(function(r){ return f==="all" || r.shift===f; });
     count.textContent="共 "+shown.length+" 筆";
@@ -407,22 +440,59 @@
     list.innerHTML="";
     shown.forEach(function(r){
       var el=document.createElement("div"); el.className="rec"; el.setAttribute("data-shift",r.shift);
+
       var meta=document.createElement("div"); meta.className="rec-meta";
-      meta.innerHTML='<span class="tag" data-shift="'+r.shift+'">'+r.shift+'</span>'+
-                     '<span class="rec-person"></span>'+
-                     '<span class="rec-time">'+fmt(r.time)+'</span>';
+      meta.innerHTML='<span class="tag" data-shift="'+r.shift+'">'+r.shift+'</span><span class="rec-person"></span><span class="rec-time">'+fmt(r.time)+'</span>';
       meta.querySelector(".rec-person").textContent=r.person;
+
       var body=document.createElement("div"); body.className="rec-body"; body.textContent=r.content;
+
+      var fields=document.createElement("div"); fields.className="rec-fields";
+      // 狀態
+      var sf=document.createElement("div"); sf.className="minifield";
+      var sSel=document.createElement("select"); sSel.className="pick "+(STATUS_CLASS[r.status]||"st-todo");
+      STATUSES.forEach(function(s){ var o=document.createElement("option"); o.value=s; o.textContent=s; if(s===r.status)o.selected=true; sSel.appendChild(o); });
+      sSel.addEventListener("change", function(){ updateField(r.id,"status",sSel.value); });
+      sf.appendChild(sSel);
+      // 處理人員
+      var hf=document.createElement("div"); hf.className="minifield";
+      var hk=document.createElement("span"); hk.className="k"; hk.textContent="處理"; 
+      var hSel=document.createElement("select"); hSel.className="pick";
+      var o0=document.createElement("option"); o0.value=""; o0.textContent="未指派"; if(!r.handler)o0.selected=true; hSel.appendChild(o0);
+      ALL_STAFF.forEach(function(n){ var o=document.createElement("option"); o.value=n; o.textContent=n; if(n===r.handler)o.selected=true; hSel.appendChild(o); });
+      hSel.addEventListener("change", function(){ updateField(r.id,"handler",hSel.value); });
+      hf.appendChild(hk); hf.appendChild(hSel);
+
+      fields.appendChild(sf); fields.appendChild(hf);
+
+      var foot=document.createElement("div"); foot.className="rec-foot";
       var del=document.createElement("button"); del.className="rec-del"; del.textContent="刪除";
       del.addEventListener("click", function(){ delRecord(r.id); });
-      el.appendChild(meta); el.appendChild(body); el.appendChild(del);
+      foot.appendChild(del);
+
+      el.appendChild(meta); el.appendChild(body); el.appendChild(fields); el.appendChild(foot);
       list.appendChild(el);
     });
   }
-  function fmt(ts){
-    var d=new Date(ts), p=function(n){ return (n<10?"0":"")+n; };
-    return d.getFullYear()+"/"+p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());
+
+  function renderLogs(){
+    logCount.textContent="共 "+logs.length+" 筆";
+    if(logs.length===0){ logList.innerHTML='<div class="empty"><div class="big">🕓</div>近 24 小時內沒有操作紀錄。</div>'; return; }
+    logList.innerHTML="";
+    logs.forEach(function(l){
+      var el=document.createElement("div"); el.className="log";
+      var t=document.createElement("span"); t.className="log-time"; t.textContent=fmtShort(l.time);
+      var who=document.createElement("span"); who.className="log-who"; who.setAttribute("data-shift",l.shift); who.textContent=l.person;
+      var act=document.createElement("span"); act.className="log-act"; act.textContent=l.action;
+      el.appendChild(t); el.appendChild(who); el.appendChild(act);
+      logList.appendChild(el);
+    });
   }
+
+  function fmt(ts){ var d=new Date(ts),p=function(n){return(n<10?"0":"")+n;};
+    return d.getFullYear()+"/"+p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes()); }
+  function fmtShort(ts){ var d=new Date(ts),p=function(n){return(n<10?"0":"")+n;};
+    return p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes()); }
 })();
 </script>
 </body>
