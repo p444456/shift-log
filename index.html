@@ -95,6 +95,9 @@
   .rec[data-shift="早班"]{border-left-color:var(--zao);}
   .rec[data-shift="中班"]{border-left-color:var(--zhong);}
   .rec[data-shift="晚班"]{border-left-color:var(--wan);}
+  @keyframes warnblink{0%,100%{background:var(--card);box-shadow:0 3px 12px rgba(30,30,45,.05);}50%{background:#fdeceb;box-shadow:0 0 0 2px #e0a49f inset;}}
+  .rec.warn{animation:warnblink 1.1s ease-in-out infinite;border-left-color:var(--danger)!important;}
+  @media(prefers-reduced-motion:reduce){.rec.warn{animation:none;background:#fdeceb;box-shadow:0 0 0 2px #e0a49f inset;}}
   .rec-meta{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap;}
   .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;color:#fff;}
   .tag[data-shift="早班"]{background:var(--zao);}
@@ -112,6 +115,8 @@
   .pick.st-todo{color:var(--st-todo);border-color:#e6cfae;background-color:#fdf5ea;}
   .pick.st-doing{color:var(--st-doing);border-color:#bcdbe2;background-color:#eef7f9;}
   .pick.st-done{color:var(--st-done);border-color:#bfe0d1;background-color:#edf6f1;}
+  .pick.hs-doing{color:var(--st-doing);border-color:#bcdbe2;background-color:#eef7f9;}
+  .pick.hs-supp{color:#c9772a;border-color:#e6cfae;background-color:#fdf5ea;}
   .rec-acts{flex:none;display:flex;gap:2px;align-items:center;}
   .rec-edit{flex:none;background:none;border:none;color:var(--shift);font-size:13px;padding:4px 6px;border-radius:6px;}
   .rec-edit:hover{background:#eef0f4;}
@@ -202,7 +207,7 @@
             <select id="newStatus"></select>
           </div>
           <div>
-            <div class="clabel">處理人員</div>
+            <div class="clabel">認領</div>
             <select id="newHandler"></select>
           </div>
         </div>
@@ -257,8 +262,14 @@
   var POLL_MS = 20000;
   var LOG_TTL_MS = 24*60*60*1000;
   var STAFF = { "早班":["TT","佩佩","PATTY","77","YUEE","猪猪"], "中班":["阿信","軒軒","小楓"], "晚班":["小乐","阿睿","HO"] };
-  var STATUSES = ["待處理","處理中","已完成"];
-  var STATUS_CLASS = { "待處理":"st-todo", "處理中":"st-doing", "已完成":"st-done" };
+  var STATUSES = ["待處理","已給資料"];
+  var STATUS_CLASS = { "待處理":"st-todo", "已給資料":"st-done" };
+  var CLAIMS = ["處理中","補單中"];
+  var WARN_MS = 5*60*1000; // 「已給資料」超過此時間開始閃爍（5 分鐘）
+
+  // 把「已給資料」的時間偷偷記在狀態字串裡，後端不用改
+  function encodeStatus(base){ return base==="已給資料" ? ("已給資料@@"+Date.now()) : base; }
+  function parseStatus(s){ s=s||""; var i=s.indexOf("@@"); return i<0 ? {base:(s||"待處理"),at:0} : {base:s.slice(0,i),at:Number(s.slice(i+2))||0}; }
 
   var ALL_STAFF = [];
   Object.keys(STAFF).forEach(function(k){ STAFF[k].forEach(function(n){ ALL_STAFF.push(n); }); });
@@ -284,7 +295,7 @@
   STATUSES.forEach(function(s){ var o=document.createElement("option"); o.value=s; o.textContent=s; newStatus.appendChild(o); });
   (function(){
     var o0=document.createElement("option"); o0.value=""; o0.textContent="未指派"; newHandler.appendChild(o0);
-    ALL_STAFF.forEach(function(n){ var o=document.createElement("option"); o.value=n; o.textContent=n; newHandler.appendChild(o); });
+    CLAIMS.forEach(function(c){ var o=document.createElement("option"); o.value=c; o.textContent=c; newHandler.appendChild(o); });
   })();
 
   /* ================= 登入 ================= */
@@ -316,6 +327,7 @@
     curShift.textContent=current.shift; curPerson.textContent=current.person;
     loginView.style.display="none"; appView.style.display="flex";
     content.focus(); window.scrollTo(0,0);
+    startWarn();
     if(USE_CLOUD){
       showRefresh(true); setStatus("cloud","連線共用資料庫中…");
       loadCloud(true); startPoll();
@@ -329,7 +341,7 @@
     Array.prototype.forEach.call(btns, function(b){ b.style.display= on?"":"none"; });
   }
   logoutBtn.addEventListener("click", function(){
-    stopPoll(); current=null; records=[]; logs=[];
+    stopPoll(); stopWarn(); current=null; records=[]; logs=[];
     appView.style.display="none"; loginView.style.display="flex";
     pwd.value=""; person.value=""; content.value="";
     person.disabled=true; person.innerHTML='<option value="">請先選擇班別</option>';
@@ -357,9 +369,10 @@
   function summ(t){ t=t.replace(/\s+/g," ").trim(); return t.length>16 ? t.slice(0,16)+"…" : t; }
   function addRecord(){
     var text=content.value.trim(); if(!text || !current) return;
+    var handlerVal = newHandler.value ? (current.person+" "+newHandler.value) : "";
     var rec={ id:Date.now()+"-"+Math.random().toString(36).slice(2,7), content:text,
       shift:current.shift, person:current.person, time:Date.now(),
-      status:newStatus.value, handler:newHandler.value };
+      status:encodeStatus(newStatus.value), handler:handlerVal };
     var logText="新增事項「"+summ(text)+"」";
     if(USE_CLOUD){
       addBtn.disabled=true; addBtn.textContent="登記中…";
@@ -392,8 +405,8 @@
   function updateField(id, field, value){
     var r=findRec(id); if(!r) return;
     var logText;
-    if(field==="status")      logText="將「"+summ(r.content)+"」狀態改為 "+value;
-    else if(field==="handler")logText="將「"+summ(r.content)+"」處理人員改為 "+(value||"未指派");
+    if(field==="status")      logText="將「"+summ(r.content)+"」狀態改為 "+parseStatus(value).base;
+    else if(field==="handler")logText="將「"+summ(r.content)+"」認領狀態改為 "+(value||"未指派");
     else if(field==="content")logText="修改事由「"+summ(r.content)+"」→「"+summ(value)+"」";
     else                      logText="更新「"+summ(r.content)+"」";
     if(USE_CLOUD){
@@ -462,21 +475,30 @@
 
       var body=document.createElement("div"); body.className="rec-body"; body.textContent=r.content;
 
+      var ps=parseStatus(r.status); var baseStatus=ps.base;
+      el.dataset.base=baseStatus; el.dataset.at=ps.at||0;
+
       var fields=document.createElement("div"); fields.className="rec-fields";
       // 狀態
       var sf=document.createElement("div"); sf.className="minifield";
-      var sSel=document.createElement("select"); sSel.className="pick "+(STATUS_CLASS[r.status]||"st-todo");
-      STATUSES.forEach(function(s){ var o=document.createElement("option"); o.value=s; o.textContent=s; if(s===r.status)o.selected=true; sSel.appendChild(o); });
-      sSel.addEventListener("change", function(){ updateField(r.id,"status",sSel.value); });
+      var sSel=document.createElement("select"); sSel.className="pick "+(STATUS_CLASS[baseStatus]||"st-todo");
+      STATUSES.forEach(function(s){ var o=document.createElement("option"); o.value=s; o.textContent=s; if(s===baseStatus)o.selected=true; sSel.appendChild(o); });
+      sSel.addEventListener("change", function(){ updateField(r.id,"status",encodeStatus(sSel.value)); });
       sf.appendChild(sSel);
-      // 處理人員
+      // 認領（處理中 / 補單中）
       var hf=document.createElement("div"); hf.className="minifield";
-      var hk=document.createElement("span"); hk.className="k"; hk.textContent="處理"; 
-      var hSel=document.createElement("select"); hSel.className="pick";
-      var o0=document.createElement("option"); o0.value=""; o0.textContent="未指派"; if(!r.handler)o0.selected=true; hSel.appendChild(o0);
-      ALL_STAFF.forEach(function(n){ var o=document.createElement("option"); o.value=n; o.textContent=n; if(n===r.handler)o.selected=true; hSel.appendChild(o); });
-      hSel.addEventListener("change", function(){ updateField(r.id,"handler",hSel.value); });
-      hf.appendChild(hk); hf.appendChild(hSel);
+      var hcls = r.handler ? (r.handler.indexOf("補單")>=0 ? "hs-supp" : "hs-doing") : "";
+      var hSel=document.createElement("select"); hSel.className="pick "+hcls;
+      var cur=document.createElement("option"); cur.value="__keep__"; cur.textContent=r.handler ? r.handler : "未指派"; cur.selected=true; hSel.appendChild(cur);
+      CLAIMS.forEach(function(c){ var o=document.createElement("option"); o.value=c; o.textContent=c; hSel.appendChild(o); });
+      if(r.handler){ var oc=document.createElement("option"); oc.value="__clear__"; oc.textContent="取消"; hSel.appendChild(oc); }
+      hSel.addEventListener("change", function(){
+        var v=hSel.value;
+        if(v==="__keep__") return;
+        if(v==="__clear__"){ updateField(r.id,"handler",""); return; }
+        updateField(r.id,"handler", current.person+" "+v);
+      });
+      hf.appendChild(hSel);
 
       fields.appendChild(sf); fields.appendChild(hf);
 
@@ -515,7 +537,21 @@
       el.appendChild(meta); el.appendChild(main);
       list.appendChild(el);
     });
+    updateWarnings();
   }
+
+  var warnTimer=null;
+  function updateWarnings(){
+    var now=Date.now();
+    var cards=list.querySelectorAll(".rec");
+    Array.prototype.forEach.call(cards, function(el){
+      var base=el.dataset.base, at=Number(el.dataset.at)||0;
+      var warn = (base==="已給資料" && at && (now-at)>=WARN_MS);
+      el.classList.toggle("warn", warn);
+    });
+  }
+  function startWarn(){ stopWarn(); warnTimer=setInterval(updateWarnings, 15000); }
+  function stopWarn(){ if(warnTimer){ clearInterval(warnTimer); warnTimer=null; } }
 
   function renderLogs(){
     logCount.textContent="共 "+logs.length+" 筆";
