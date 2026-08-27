@@ -68,12 +68,11 @@
   .pane{display:none;} .pane.on{display:block;}
 
   /* 登記表單 */
-  .composer{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:22px;}
-  .composer .clabel{font-size:13px;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.02em;}
-  .composer textarea{width:100%;min-height:72px;resize:vertical;border:1px solid var(--line);border-radius:10px;background:#fbfaf7;padding:12px 13px;font-size:16px;color:var(--ink);font-family:inherit;line-height:1.6;}
-  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
-  .form-grid select{width:100%;padding:11px 34px 11px 12px;border:1px solid var(--line);border-radius:10px;background:#fbfaf7;font-size:15px;color:var(--ink);}
-  .composer-row{display:flex;justify-content:flex-end;margin-top:14px;}
+  .composer{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:18px;}
+  .composer-line{display:flex;gap:10px;align-items:flex-start;}
+  .composer-line textarea{flex:1;min-width:0;min-height:44px;resize:vertical;border:1px solid var(--line);border-radius:10px;background:#fbfaf7;padding:11px 12px;font-size:15px;color:var(--ink);font-family:inherit;line-height:1.5;}
+  .composer-line select{flex:none;width:130px;padding:11px 32px 11px 12px;border:1px solid var(--line);border-radius:10px;background:#fbfaf7;font-size:15px;color:var(--ink);appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%236b6b78' stroke-width='1.6' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 12px center;}
+  .composer-row{display:flex;justify-content:flex-end;margin-top:10px;}
   .btn-add{padding:11px 24px;border:none;border-radius:9px;background:var(--shift);color:#fff;font-size:15px;font-weight:700;transition:background .3s ease,filter .15s;}
   .btn-add:hover{filter:brightness(1.06);}
   .btn-add:disabled{background:#c9c7bf;cursor:not-allowed;}
@@ -90,7 +89,7 @@
   .empty .big{font-size:34px;margin-bottom:8px;}
 
   /* 紀錄卡 */
-  .rec{background:var(--card);border-radius:12px;box-shadow:0 3px 12px rgba(30,30,45,.05);padding:15px 16px;margin-bottom:12px;border-left:4px solid var(--line);animation:pop .18s ease;}
+  .rec{display:flex;align-items:flex-start;gap:16px;background:var(--card);border-radius:12px;box-shadow:0 3px 12px rgba(30,30,45,.05);padding:15px 16px;margin-bottom:12px;border-left:4px solid var(--line);animation:pop .18s ease;}
   @keyframes pop{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
   .rec[data-shift="早班"]{border-left-color:var(--zao);}
   .rec[data-shift="中班"]{border-left-color:var(--zhong);}
@@ -98,14 +97,14 @@
   @keyframes warnblink{0%,100%{background:var(--card);box-shadow:0 3px 12px rgba(30,30,45,.05);}50%{background:#fdeceb;box-shadow:0 0 0 2px #e0a49f inset;}}
   .rec.warn{animation:warnblink 1.1s ease-in-out infinite;border-left-color:var(--danger)!important;}
   @media(prefers-reduced-motion:reduce){.rec.warn{animation:none;background:#fdeceb;box-shadow:0 0 0 2px #e0a49f inset;}}
-  .rec-meta{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap;}
+  .rec-side{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:78px;}
   .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;color:#fff;}
   .tag[data-shift="早班"]{background:var(--zao);}
   .tag[data-shift="中班"]{background:var(--zhong);}
   .tag[data-shift="晚班"]{background:var(--wan);}
   .rec-person{font-size:13px;font-weight:700;color:var(--ink);}
-  .rec-time{font-size:12px;color:var(--ink-soft);margin-left:auto;}
-  .rec-main{display:flex;align-items:center;gap:14px;}
+  .rec-time{font-size:11.5px;color:var(--ink-soft);}
+  .rec-main{flex:1;min-width:0;display:flex;align-items:center;gap:14px;}
   .rec-body{flex:1;min-width:0;font-size:15.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
   .rec-fields{flex:none;display:flex;gap:10px;align-items:center;}
   .minifield{display:flex;align-items:center;gap:6px;}
@@ -128,7 +127,9 @@
   .edit-save{border:none;border-radius:8px;padding:7px 16px;background:var(--shift);color:#fff;font-size:13px;font-weight:700;}
   .edit-cancel{border:1px solid var(--line);border-radius:8px;padding:7px 14px;background:var(--card);color:var(--ink-soft);font-size:13px;}
   @media(max-width:600px){
-    .rec-main{flex-direction:column;align-items:stretch;gap:10px;}
+    .rec{flex-direction:column;gap:10px;}
+    .rec-side{flex-direction:row;align-items:center;gap:8px;min-width:0;}
+    .rec-main{flex-direction:column;align-items:stretch;gap:10px;width:100%;}
     .rec-fields{flex-wrap:wrap;}
     .rec-acts{align-self:flex-end;}
   }
@@ -144,7 +145,8 @@
   .log-act{font-size:14px;color:var(--ink);word-break:break-word;}
 
   @media(max-width:520px){
-    .form-grid{grid-template-columns:1fr;}
+    .composer-line{flex-direction:column;}
+    .composer-line textarea,.composer-line select{width:100%;}
     .login-inner{padding:26px 22px 30px;}
   }
 </style>
@@ -199,17 +201,10 @@
     <!-- 登記紀錄分頁 -->
     <div class="pane on" id="pane-records">
       <div class="composer">
-        <div class="clabel">事由</div>
-        <textarea id="content" placeholder="輸入要登記的事項…（例如：交班備註、待處理事項）"></textarea>
-        <div class="form-grid">
-          <div>
-            <div class="clabel">處理狀態</div>
-            <select id="newStatus"></select>
-          </div>
-          <div>
-            <div class="clabel">認領</div>
-            <select id="newHandler"></select>
-          </div>
+        <div class="composer-line">
+          <textarea id="content" placeholder="輸入要登記的事項…"></textarea>
+          <select id="newStatus" title="處理狀態"></select>
+          <select id="newHandler" title="認領"></select>
         </div>
         <div class="composer-row">
           <button class="btn-add" id="addBtn" disabled>登記事項</button>
@@ -476,7 +471,7 @@
     shown.forEach(function(r){
       var el=document.createElement("div"); el.className="rec"; el.setAttribute("data-shift",r.shift);
 
-      var meta=document.createElement("div"); meta.className="rec-meta";
+      var meta=document.createElement("div"); meta.className="rec-side";
       meta.innerHTML='<span class="tag" data-shift="'+r.shift+'">'+r.shift+'</span><span class="rec-person"></span><span class="rec-time">'+fmt(r.time)+'</span>';
       meta.querySelector(".rec-person").textContent=r.person;
 
