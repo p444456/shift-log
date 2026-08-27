@@ -12,6 +12,19 @@
     --st-todo:#c9772a; --st-doing:#2f7d90; --st-done:#2f8f6b;
     --shift:var(--brand); --radius:14px; --shadow:0 6px 24px rgba(30,30,45,.08);
   }
+  body.dark{
+    --bg:#1a1c22; --card:#24272f; --ink:#e8e8ec; --ink-soft:#9a9aa6;
+    --line:#363a44; --brand:#5b7199; --brand-ink:#ffffff;
+    --shadow:0 6px 24px rgba(0,0,0,.35);
+  }
+  body.dark .composer-line textarea,
+  body.dark .search-box,
+  body.dark .pick,
+  body.dark .filter select,
+  body.dark input[type="password"],
+  body.dark select,
+  body.dark .edit-ta{background-color:#2c2f38;color:var(--ink);}
+  body.dark .refresh{background:#2c2f38;}
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{font-family:"PingFang TC","PingFang SC","Microsoft JhengHei","Microsoft YaHei",-apple-system,"Segoe UI",sans-serif;
@@ -50,6 +63,11 @@
   .badge{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.22);white-space:nowrap;}
   .who-name{font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .topbar .spacer{flex:1;}
+  .counts{display:flex;gap:6px;margin-left:10px;flex-wrap:wrap;}
+  .cbadge{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.2);color:#fff;white-space:nowrap;}
+  .cbadge.warn{background:#fff;color:var(--danger);}
+  .tbtn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:15px;line-height:1;padding:6px 10px;border-radius:8px;margin-right:8px;}
+  .tbtn:hover{background:rgba(255,255,255,.28);}
   .logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:13px;padding:7px 12px;border-radius:8px;}
   .logout:hover{background:rgba(255,255,255,.28);}
   .wrap{max-width:760px;width:100%;margin:0 auto;padding:18px 16px 60px;}
@@ -83,6 +101,8 @@
   .head-tools{margin-left:auto;display:flex;align-items:center;gap:8px;}
   .refresh{border:1px solid var(--line);background:var(--card);color:var(--ink-soft);font-size:13px;padding:7px 12px;border-radius:8px;}
   .refresh:hover{color:var(--ink);} .refresh.spin{opacity:.6;pointer-events:none;}
+  .search-box{width:180px;padding:7px 11px;font-size:14px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);}
+  .search-box::placeholder{color:#a8a8b0;}
   .filter select{width:auto;padding:7px 30px 7px 11px;font-size:14px;background-color:var(--card);border:1px solid var(--line);border-radius:8px;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%236b6b78' stroke-width='1.6' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 10px center;}
 
   .empty{text-align:center;color:var(--ink-soft);padding:44px 20px;background:var(--card);border-radius:var(--radius);border:1px dashed var(--line);}
@@ -119,6 +139,8 @@
   .rec-acts{flex:none;display:flex;gap:2px;align-items:center;}
   .rec-edit{flex:none;background:none;border:none;color:var(--shift);font-size:13px;padding:4px 6px;border-radius:6px;}
   .rec-edit:hover{background:#eef0f4;}
+  .rec-close{flex:none;background:none;border:none;color:var(--ok);font-size:13px;padding:4px 6px;border-radius:6px;}
+  .rec-close:hover{background:#eaf5f0;}
   .rec-del{flex:none;background:none;border:none;color:var(--ink-soft);font-size:13px;padding:4px 6px;border-radius:6px;}
   .rec-del:hover{color:var(--danger);background:#faf0ef;}
   .edit-box{flex:1;min-width:0;}
@@ -186,7 +208,10 @@
 <section id="app-view">
   <div class="topbar" id="topbar">
     <div class="who"><span class="badge" id="curShift">—</span><span class="who-name" id="curPerson">—</span></div>
+    <span class="counts" id="counts"></span>
     <span class="spacer"></span>
+    <button class="tbtn" id="notifyBtn" title="開啟待跟催通知">🔕</button>
+    <button class="tbtn" id="themeBtn" title="深色模式（僅本裝置）">🌙</button>
     <button class="logout" id="logoutBtn">登出</button>
   </div>
 
@@ -215,6 +240,8 @@
         <h2>登記紀錄</h2>
         <span class="count" id="count"></span>
         <div class="head-tools">
+          <input id="search" class="search-box" type="search" placeholder="搜尋事由…">
+          <button class="refresh" id="exportBtn" title="匯出當天紀錄">⤓ 匯出當天</button>
           <button class="refresh recRefresh" title="重新整理">↻ 重新整理</button>
           <div class="filter">
             <select id="filter">
@@ -222,6 +249,7 @@
               <option value="早班">只看早班</option>
               <option value="中班">只看中班</option>
               <option value="晚班">只看晚班</option>
+              <option value="__archived">已結案</option>
             </select>
           </div>
         </div>
@@ -279,12 +307,70 @@
       shiftTabs=$("shiftTabs"), band=$("band"), loginView=$("login-view"), appView=$("app-view"),
       curShift=$("curShift"), curPerson=$("curPerson"), logoutBtn=$("logoutBtn"),
       content=$("content"), newStatus=$("newStatus"), newHandler=$("newHandler"), addBtn=$("addBtn"),
-      list=$("list"), count=$("count"), filter=$("filter"),
+      list=$("list"), count=$("count"), filter=$("filter"), search=$("search"),
       logList=$("logList"), logCount=$("logCount"),
       statusBox=$("status"), statusText=$("statusText"),
       tabRecords=$("tab-records"), tabLogs=$("tab-logs"),
-      paneRecords=$("pane-records"), paneLogs=$("pane-logs");
+      paneRecords=$("pane-records"), paneLogs=$("pane-logs"),
+      counts=$("counts"), themeBtn=$("themeBtn"), exportBtn=$("exportBtn"), notifyBtn=$("notifyBtn");
   var SHIFT_COLOR={ "早班":"var(--zao)", "中班":"var(--zhong)", "晚班":"var(--wan)" };
+
+  /* ===== 深色模式（僅本裝置，不影響他人） ===== */
+  var THEME_KEY="shift-theme";
+  function applyTheme(){
+    var dark = localStorage.getItem(THEME_KEY)==="dark";
+    document.body.classList.toggle("dark", dark);
+    themeBtn.textContent = dark ? "☀️" : "🌙";
+  }
+  themeBtn.addEventListener("click", function(){
+    var dark = localStorage.getItem(THEME_KEY)==="dark";
+    try{ localStorage.setItem(THEME_KEY, dark?"light":"dark"); }catch(e){}
+    applyTheme();
+  });
+  try{ applyTheme(); }catch(e){}
+
+  /* ===== 待跟催系統通知（桌面／手機，僅本裝置） ===== */
+  var NOTIFY_KEY="shift-notify";
+  var notified={}, notifyPrimed=false;
+  function notifySupported(){ return ("Notification" in window); }
+  function notifyEnabled(){ return notifySupported() && Notification.permission==="granted" && localStorage.getItem(NOTIFY_KEY)==="on"; }
+  function applyNotifyBtn(){
+    var on = notifyEnabled();
+    notifyBtn.textContent = on ? "🔔" : "🔕";
+    notifyBtn.title = on ? "待跟催通知：開啟中" : "開啟待跟催通知";
+  }
+  notifyBtn.addEventListener("click", function(){
+    if(!notifySupported()){ alert("這個瀏覽器不支援系統通知。"); return; }
+    if(localStorage.getItem(NOTIFY_KEY)==="on"){
+      try{ localStorage.setItem(NOTIFY_KEY,"off"); }catch(e){} applyNotifyBtn(); return;
+    }
+    Notification.requestPermission().then(function(p){
+      if(p==="granted"){ try{ localStorage.setItem(NOTIFY_KEY,"on"); }catch(e){} }
+      else{ alert("尚未允許通知。請在瀏覽器網址列的鎖頭圖示裡，把此網站的通知設為允許。"); }
+      applyNotifyBtn();
+    });
+  });
+  try{ applyNotifyBtn(); }catch(e){}
+
+  function fireNotify(r){
+    try{
+      var n=new Notification("四方相通 · 待跟催", { body: summ(r.content)+"\n已給資料超過 "+(WARN_MS/60000)+" 分鐘，尚未認領", tag:r.id });
+      n.onclick=function(){ window.focus(); n.close(); };
+    }catch(e){}
+  }
+  function checkNotify(){
+    var now=Date.now(), active={};
+    records.forEach(function(r){
+      if(isArchived(r)) return;
+      var ps=parseStatus(r.status);
+      if(ps.base==="已給資料" && ps.at && (now-ps.at)>=WARN_MS && !r.handler){
+        active[r.id]=true;
+        if(!notified[r.id]){ if(notifyPrimed && notifyEnabled()) fireNotify(r); notified[r.id]=true; }
+      }
+    });
+    Object.keys(notified).forEach(function(id){ if(!active[id]) delete notified[id]; });
+    notifyPrimed=true;
+  }
 
   /* 填充登記表單的下拉 */
   STATUSES.forEach(function(s){ var o=document.createElement("option"); o.value=s; o.textContent=s; newStatus.appendChild(o); });
@@ -346,7 +432,7 @@
     Array.prototype.forEach.call(shiftTabs.children, function(b){ b.setAttribute("aria-pressed","false"); });
     band.style.background="linear-gradient(90deg,var(--zao),var(--zhong),var(--wan))";
     document.documentElement.style.setProperty("--shift","var(--brand)");
-    switchTab("records"); refreshLoginBtn(); window.scrollTo(0,0);
+    switchTab("records"); refreshLoginBtn(); counts.innerHTML=""; notified={}; notifyPrimed=false; window.scrollTo(0,0);
   });
 
   /* ================= 分頁切換 ================= */
@@ -407,6 +493,7 @@
     if(field==="status")      logText="將「"+summ(r.content)+"」狀態改為 "+parseStatus(value).base;
     else if(field==="handler")logText="將「"+summ(r.content)+"」認領狀態改為 "+(value||"未指派");
     else if(field==="content")logText="修改事由「"+summ(r.content)+"」→「"+summ(value)+"」";
+    else if(field==="archived")logText=(value==="1"?"結案「":"還原「")+summ(r.content)+"」";
     else                      logText="更新「"+summ(r.content)+"」";
     if(USE_CLOUD){
       r[field]=value; renderAll();                            // 立即套用
@@ -456,15 +543,28 @@
 
   /* ================= 顯示 ================= */
   filter.addEventListener("change", renderRecords);
+  search.addEventListener("input", renderRecords);
   function renderAll(){ renderRecords(); renderLogs(); }
+
+  function isArchived(r){ return r.archived==="1" || r.archived===1 || r.archived===true; }
 
   function renderRecords(){
     var f=filter.value;
-    var shown=records.filter(function(r){ return f==="all" || r.shift===f; });
+    var viewArchived = (f==="__archived");
+    var q=(search.value||"").trim().toLowerCase();
+    var shown=records.filter(function(r){
+      if(viewArchived){ if(!isArchived(r)) return false; }
+      else{ if(isArchived(r)) return false; if(f!=="all" && r.shift!==f) return false; }
+      if(q){ if(r.content.toLowerCase().indexOf(q)<0) return false; }
+      return true;
+    });
     count.textContent="共 "+shown.length+" 筆";
+    updateCounts();
     if(shown.length===0){
-      list.innerHTML='<div class="empty"><div class="big">📋</div>'+
-        (records.length===0?"還沒有任何登記，於上方輸入後按「登記事項」。":"這個班別目前沒有紀錄。")+'</div>';
+      var msg = viewArchived ? "目前沒有已結案的紀錄。"
+              : (records.filter(function(r){return !isArchived(r);}).length===0 ? "還沒有任何登記，於上方輸入後按「登記事項」。"
+              : (q ? "找不到符合「"+search.value.trim()+"」的紀錄。" : "這個班別目前沒有紀錄。"));
+      list.innerHTML='<div class="empty"><div class="big">🔍</div>'+msg+'</div>';
       return;
     }
     list.innerHTML="";
@@ -504,12 +604,25 @@
 
       fields.appendChild(sf); fields.appendChild(hf);
 
-      var del=document.createElement("button"); del.className="rec-del"; del.textContent="刪除";
-      del.addEventListener("click", function(){ delRecord(r.id); });
-
-      var editBtn=document.createElement("button"); editBtn.className="rec-edit"; editBtn.textContent="編輯";
       var acts=document.createElement("div"); acts.className="rec-acts";
-      acts.appendChild(editBtn); acts.appendChild(del);
+      var editBtn=document.createElement("button"); editBtn.className="rec-edit"; editBtn.textContent="編輯";
+
+      if(viewArchived){
+        // 已結案檢視：還原 + 徹底刪除
+        var restoreBtn=document.createElement("button"); restoreBtn.className="rec-edit"; restoreBtn.textContent="還原";
+        restoreBtn.addEventListener("click", function(){ updateField(r.id,"archived",""); });
+        var del=document.createElement("button"); del.className="rec-del"; del.textContent="刪除";
+        del.addEventListener("click", function(){ delRecord(r.id); });
+        acts.appendChild(restoreBtn); acts.appendChild(del);
+      }else{
+        // 一般檢視：編輯 + 結案
+        var closeBtn=document.createElement("button"); closeBtn.className="rec-close"; closeBtn.textContent="結案";
+        closeBtn.addEventListener("click", function(){
+          if(!confirm("將這筆結案（歸檔）？之後可到「已結案」查看或還原。")) return;
+          updateField(r.id,"archived","1");
+        });
+        acts.appendChild(editBtn); acts.appendChild(closeBtn);
+      }
 
       var main=document.createElement("div"); main.className="rec-main";
       main.appendChild(body); main.appendChild(fields); main.appendChild(acts);
@@ -552,9 +665,49 @@
       var warn = (base==="已給資料" && at && (now-at)>=WARN_MS && !claimed);
       el.classList.toggle("warn", warn);
     });
+    updateCounts();
+    checkNotify();
   }
   function startWarn(){ stopWarn(); warnTimer=setInterval(updateWarnings, 15000); }
   function stopWarn(){ if(warnTimer){ clearInterval(warnTimer); warnTimer=null; } }
+
+  /* ===== 頂部待辦計數 ===== */
+  function updateCounts(){
+    var now=Date.now(), todo=0, chase=0;
+    records.forEach(function(r){
+      if(isArchived(r)) return;
+      var ps=parseStatus(r.status);
+      if(ps.base==="待處理") todo++;
+      if(ps.base==="已給資料" && ps.at && (now-ps.at)>=WARN_MS && !r.handler) chase++;
+    });
+    var html='<span class="cbadge">待處理 '+todo+'</span>';
+    if(chase>0) html+='<span class="cbadge warn">待跟催 '+chase+'</span>';
+    counts.innerHTML=html;
+  }
+
+  /* ===== 一鍵匯出當天紀錄（CSV） ===== */
+  exportBtn.addEventListener("click", exportToday);
+  function exportToday(){
+    var now=new Date(), y=now.getFullYear(), m=now.getMonth(), d=now.getDate();
+    var todays=records.filter(function(r){
+      var t=new Date(r.time); return t.getFullYear()===y && t.getMonth()===m && t.getDate()===d;
+    });
+    if(todays.length===0){ alert("今天還沒有任何登記紀錄。"); return; }
+    todays.sort(function(a,b){ return a.time-b.time; });
+    var rows=[["時間","班別","登記人","事由","處理狀態","認領","狀態"]];
+    todays.forEach(function(r){
+      rows.push([ fmt(r.time), r.shift, r.person, r.content, parseStatus(r.status).base, r.handler||"", isArchived(r)?"已結案":"進行中" ]);
+    });
+    var csv=rows.map(function(row){
+      return row.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(",");
+    }).join("\r\n");
+    var p=function(n){return(n<10?"0":"")+n;};
+    var fname="四方相通_"+y+p(m+1)+p(d)+".csv";
+    var blob=new Blob([" \uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
+    var url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download=fname; document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
 
   function renderLogs(){
     logCount.textContent="共 "+logs.length+" 筆";
