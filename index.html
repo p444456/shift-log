@@ -318,6 +318,7 @@
         <h2>操作日誌</h2>
         <span class="count" id="logCount"></span>
         <div class="head-tools">
+          <input id="logSearch" class="search-box" type="search" placeholder="搜尋日誌（事由／人員）…">
           <button class="refresh recRefresh" title="重新整理">↻ 重新整理</button>
         </div>
       </div>
@@ -365,7 +366,7 @@
       curShift=$("curShift"), curPerson=$("curPerson"), logoutBtn=$("logoutBtn"),
       content=$("content"), newStatus=$("newStatus"), newHandler=$("newHandler"), addBtn=$("addBtn"),
       list=$("list"), count=$("count"), filter=$("filter"), search=$("search"), todoBadges=$("todoBadges"),
-      logList=$("logList"), logCount=$("logCount"),
+      logList=$("logList"), logCount=$("logCount"), logSearch=$("logSearch"),
       statusBox=$("status"), statusText=$("statusText"),
       tabRecords=$("tab-records"), tabLogs=$("tab-logs"),
       paneRecords=$("pane-records"), paneLogs=$("pane-logs"),
@@ -972,6 +973,7 @@
   /* ================= 顯示 ================= */
   filter.addEventListener("change", renderRecords);
   search.addEventListener("input", renderRecords);
+  if($("logSearch")) $("logSearch").addEventListener("input", renderLogs);
   function toast(msg){
     var t=document.createElement("div"); t.className="toast"; t.textContent=msg;
     document.body.appendChild(t);
@@ -1261,10 +1263,15 @@
   }
 
   function renderLogs(){
-    logCount.textContent="共 "+logs.length+" 筆";
-    if(logs.length===0){ logList.innerHTML='<div class="empty"><div class="big">🕓</div>近 24 小時內沒有操作紀錄。</div>'; return; }
+    var q=(logSearch&&logSearch.value||"").trim().toLowerCase();
+    var shown = q ? logs.filter(function(l){ return (l.action+" "+l.person).toLowerCase().indexOf(q)>=0; }) : logs;
+    logCount.textContent="共 "+shown.length+" 筆";
+    if(shown.length===0){
+      logList.innerHTML='<div class="empty"><div class="big">🕓</div>'+(q?"找不到符合的日誌。":"近 24 小時內沒有操作紀錄。")+'</div>';
+      return;
+    }
     logList.innerHTML="";
-    logs.forEach(function(l){
+    shown.forEach(function(l){
       var el=document.createElement("div"); el.className="log";
       var t=document.createElement("span"); t.className="log-time"; t.textContent=fmtShort(l.time);
       var who=document.createElement("span"); who.className="log-who"; who.setAttribute("data-shift",l.shift); who.textContent=l.person;
