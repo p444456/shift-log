@@ -379,7 +379,7 @@
   }
 
   /* ===== 懸浮小視窗（待辦看板） ===== */
-  var pipWin=null, miniPanel=null, miniBar=null, miniColor=null, miniAudioCtx=null, miniPrevChase={}, miniPrimed=false;
+  var pipWin=null, miniPanel=null, miniBar=null, miniColor=null, miniAudioCtx=null, miniPrevChase={}, miniPrimed=false, miniEditingId=null;
   var URGENT_MS=30*60*1000;
   var MINI_FONT_KEY="shift-mini-fs", MINI_SOUND_KEY="shift-mini-sound", MINI_COLLAPSE_KEY="shift-mini-collapse", MINI_SIZE_KEY="shift-mini-size";
   var MINI_CSS=
@@ -408,6 +408,12 @@
     ".m-take.m-supp{background:#b3453c;}"+
     ".m-give{background:#c9772a;}"+
     ".m-close,.m-edit{flex:none;background:transparent;border:1px solid var(--mline);color:var(--msub);font-size:11px;padding:4px 8px;border-radius:5px;cursor:pointer;}"+
+    ".m-claim{width:100%;margin-top:6px;padding:5px 8px;border:1px solid var(--mline);border-radius:5px;background:var(--mcard);color:var(--mfg);font-size:12px;font-weight:700;cursor:pointer;}"+
+    ".m-claim.c-doing{color:#7fb4c4;border-color:#7fb4c4;}"+
+    ".m-claim.c-supp{color:#ff6b60;border-color:#ff6b60;}"+
+    ".m-ta{width:100%;min-height:56px;border:1px solid var(--mline);border-radius:6px;background:var(--mcard);color:var(--mfg);font-size:var(--mfs,12.5px);font-family:inherit;padding:7px 9px;resize:vertical;line-height:1.4;}"+
+    ".m-save{flex:1;padding:5px;border:none;border-radius:5px;background:#3d8ea0;color:#fff;font-size:11.5px;font-weight:700;cursor:pointer;}"+
+    ".m-cancel{flex:1;padding:5px;border:1px solid var(--mline);border-radius:5px;background:transparent;color:var(--msub);font-size:11.5px;cursor:pointer;}"+
     ".m-take:active,.m-give:active,.m-close:active,.m-edit:active{opacity:.8;}"+
     ".ordno{color:#7fb4c4;font-weight:700;cursor:pointer;border-bottom:1px dashed currentColor;}"+
     ".ordno.copied{color:#6fcf97;border-bottom-color:transparent;}"+
@@ -463,15 +469,30 @@
     }
     var ord=e.target.closest(".ordno");
     if(ord){ copyText(ord.dataset.copy, ord); return; }
+    var ed=e.target.closest(".m-edit");
+    if(ed){ miniEditingId=ed.dataset.id; buildMini(); var ta=miniPanel.querySelector(".m-ta"); if(ta) ta.focus(); return; }
+    var cancel=e.target.closest(".m-cancel");
+    if(cancel){ miniEditingId=null; buildMini(); return; }
+    var save=e.target.closest(".m-save");
+    if(save){
+      var box=save.closest(".m-i"), ta2=box&&box.querySelector(".m-ta"), id=save.dataset.id, r0=findRec(id);
+      var nv=ta2?String(ta2.value).trim():"";
+      miniEditingId=null;
+      if(r0 && nv && nv!==r0.content) updateField(id,"content",nv); else buildMini();
+      return;
+    }
     if(!current) return;
-    var take=e.target.closest(".m-take");
-    if(take){ updateField(take.dataset.id, "handler", current.person+" "+(take.dataset.claim||"處理中")); return; }
     var give=e.target.closest(".m-give");
     if(give){ updateField(give.dataset.id, "status", encodeStatus("已給資料")); return; }
     var close=e.target.closest(".m-close");
     if(close){ updateField(close.dataset.id, "archived", String(Date.now())); return; }
-    var ed=e.target.closest(".m-edit");
-    if(ed){ var r=findRec(ed.dataset.id); if(r){ var nv=window.prompt("修改事由：", r.content); if(nv!=null){ nv=String(nv).trim(); if(nv && nv!==r.content) updateField(r.id,"content",nv); } } return; }
+  }
+  function onMiniChange(e){
+    var sel=e.target.closest(".m-claim"); if(!sel || !current) return;
+    var v=sel.value, id=sel.dataset.id;
+    if(v==="__keep__") return;
+    if(v==="__clear__"){ updateField(id,"handler",""); return; }
+    updateField(id,"handler", current.person+" "+v);
   }
   function onMiniInput(e){
     if(e.target && e.target.classList && e.target.classList.contains("mb-color")){ saveMiniBg(e.target.value); applyMiniTheme(e.target.value); }
@@ -490,40 +511,70 @@
     return out;
   }
   function fmtMin(ms){ var m=Math.floor(ms/60000); return m<60 ? (m+" 分") : (Math.floor(m/60)+" 時"+(m%60)+" 分"); }
+  function claimCell(r){
+    var cls = r.handler ? (r.handler.indexOf("補單")>=0 ? "c-supp" : "c-doing") : "";
+    var opts='<option value="__keep__">'+esc(r.handler||"未指派")+'</option>'+
+             '<option value="處理中">處理中</option><option value="補單中">補單中</option>';
+    if(r.handler) opts+='<option value="__clear__">取消認領</option>';
+    return '<select class="m-claim '+cls+'" data-id="'+r.id+'">'+opts+'</select>';
+  }
+  function editCell(r){
+    return '<textarea class="m-ta">'+esc(r.content)+'</textarea>'+
+           '<div class="m-btns"><button class="m-cancel" data-id="'+r.id+'">取消</button>'+
+           '<button class="m-save" data-id="'+r.id+'">儲存</button></div>';
+  }
   function updateMini(){
     if(!miniPanel) return;
-    var now=Date.now(), todo=[], chase=[];
+    if(miniEditingId) return; // 編輯中：暫停自動重建，保護輸入
+    buildMini();
+  }
+  function buildMini(){
+    if(!miniPanel) return;
+    var now=Date.now(), todo=[], given=[];
     records.forEach(function(r){
       if(isArchived(r)) return;
       var ps=parseStatus(r.status);
       if(ps.base==="待處理") todo.push(r);
-      if(ps.base==="已給資料" && ps.at && (now-ps.at)>=WARN_MS && !r.handler) chase.push(r);
+      if(ps.base==="已給資料") given.push(r);
     });
-    chase.sort(function(a,b){ return parseStatus(a.status).at - parseStatus(b.status).at; }); // 拖最久的排最前
-
-    // 新待跟催出現 → 提示音
+    // 未認領且超時的排最前，其餘按給資料時間
+    given.sort(function(a,b){
+      var pa=parseStatus(a.status), pb=parseStatus(b.status);
+      var wa=(!a.handler && (now-pa.at)>=WARN_MS)?0:1, wb=(!b.handler && (now-pb.at)>=WARN_MS)?0:1;
+      if(wa!==wb) return wa-wb;
+      return pa.at - pb.at;
+    });
+    var chaseCount=0;
+    // 提示音：新出現的「未認領超時」
     var curIds={}, isNew=false;
-    chase.forEach(function(r){ curIds[r.id]=true; if(!miniPrevChase[r.id]) isNew=true; });
+    given.forEach(function(r){
+      var ps=parseStatus(r.status);
+      if(!r.handler && ps.at && (now-ps.at)>=WARN_MS){ chaseCount++; curIds[r.id]=true; if(!miniPrevChase[r.id]) isNew=true; }
+    });
     if(isNew && miniPrimed && miniSoundOn()) beep();
     miniPrevChase=curIds; miniPrimed=true;
 
     var h='<div class="m-h">四方相通 · 待辦</div>';
-    h+='<div class="m-c">待處理 '+todo.length+'　待跟催 '+chase.length+'</div>';
-    if(chase.length){
-      h+='<div class="m-t">🔴 待跟催</div>';
-      chase.forEach(function(r){
-        var age=now-parseStatus(r.status).at, urgent=age>=URGENT_MS;
-        h+='<div class="m-i warn'+(urgent?' urgent':'')+'"><div class="m-row"><span class="m-txt">'+miniBody(r.content)+'</span><span class="m-age">已 '+fmtMin(age)+'</span></div>'+
+    h+='<div class="m-c">待處理 '+todo.length+'　已給資料 '+given.length+'（待跟催 '+chaseCount+'）</div>';
+    if(given.length){
+      h+='<div class="m-t">🔴 已給資料 / 處理中</div>';
+      given.forEach(function(r){
+        var ps=parseStatus(r.status), age=now-ps.at;
+        var chasing=(!r.handler && ps.at && age>=WARN_MS), urgent=(chasing && age>=URGENT_MS);
+        if(r.id===miniEditingId){
+          h+='<div class="m-i">'+editCell(r)+'</div>'; return;
+        }
+        h+='<div class="m-i'+(chasing?' warn':'')+(urgent?' urgent':'')+'"><div class="m-row"><span class="m-txt">'+miniBody(r.content)+'</span><span class="m-age">已 '+fmtMin(age)+'</span></div>'+
            '<div class="m-sub">'+r.shift+' · '+esc(r.person)+'</div>'+
-           '<div class="m-btns"><button class="m-take" data-id="'+r.id+'" data-claim="處理中">處理中</button>'+
-           '<button class="m-take m-supp" data-id="'+r.id+'" data-claim="補單中">補單中</button>'+
-           '<button class="m-edit" data-id="'+r.id+'">編輯</button>'+
+           claimCell(r)+
+           '<div class="m-btns"><button class="m-edit" data-id="'+r.id+'">編輯</button>'+
            '<button class="m-close" data-id="'+r.id+'">結案</button></div></div>';
       });
     }
     if(!miniCollapsed() && todo.length){
       h+='<div class="m-t">待處理</div>';
       todo.forEach(function(r){
+        if(r.id===miniEditingId){ h+='<div class="m-i">'+editCell(r)+'</div>'; return; }
         h+='<div class="m-i"><div class="m-row"><span class="m-txt">'+miniBody(r.content)+'</span></div>'+
            '<div class="m-sub">'+r.shift+' · '+esc(r.person)+'</div>'+
            '<div class="m-btns"><button class="m-give" data-id="'+r.id+'">標記已給資料</button>'+
@@ -532,7 +583,7 @@
       });
     }
     if(miniCollapsed() && todo.length) h+='<div class="m-t">（待處理 '+todo.length+' 筆已收合）</div>';
-    if(!chase.length && !todo.length) h+='<div class="m-empty">目前沒有待辦 🎉</div>';
+    if(!given.length && !todo.length) h+='<div class="m-empty">目前沒有待辦 🎉</div>';
     miniPanel.innerHTML=h;
     var tEl=miniBar && miniBar.querySelector(".mb-time");
     if(tEl) tEl.textContent = lastSyncTime ? ("更新 "+fmtClock(lastSyncTime)) : "";
@@ -562,9 +613,11 @@
         pipWin.document.body.appendChild(miniPanel);
         pipWin.document.addEventListener("click", onMiniAll);
         pipWin.document.addEventListener("input", onMiniInput);
+        pipWin.document.addEventListener("change", onMiniChange);
         miniColor.value=loadMiniBg(); applyMiniTheme(loadMiniBg()); applyMiniFont(); refreshMiniBarBtns();
-        miniPrevChase={}; miniPrimed=false;
+        miniPrevChase={}; miniPrimed=false; miniEditingId=null;
         pipWin.addEventListener("pagehide", function(){
+          miniEditingId=null;
           try{ localStorage.setItem(MINI_SIZE_KEY, JSON.stringify({w:pipWin.innerWidth, h:pipWin.innerHeight})); }catch(e){}
           pipWin=null;
         });
