@@ -450,14 +450,31 @@
     var s=miniBar.querySelector('[data-mb="sound"]'); if(s) s.textContent=miniSoundOn()?"🔔":"🔕";
     var c=miniBar.querySelector('[data-mb="collapse"]'); if(c) c.textContent=miniCollapsed()?"▦":"▤";
   }
-  function onMiniBar(e){
-    var b=e.target.closest(".mb-btn"); if(!b) return;
-    var act=b.dataset.mb;
-    if(act==="fs-") setMiniFont(loadMiniFont()-1);
-    else if(act==="fs+") setMiniFont(loadMiniFont()+1);
-    else if(act==="refresh"){ if(USE_CLOUD) loadCloud(false); else updateMini(); }
-    else if(act==="sound") toggleMiniSound();
-    else if(act==="collapse") toggleMiniCollapse();
+  function onMiniAll(e){
+    var mb=e.target.closest(".mb-btn");
+    if(mb){
+      var act=mb.dataset.mb;
+      if(act==="fs-") setMiniFont(loadMiniFont()-1);
+      else if(act==="fs+") setMiniFont(loadMiniFont()+1);
+      else if(act==="refresh"){ if(USE_CLOUD) loadCloud(false); else updateMini(); }
+      else if(act==="sound") toggleMiniSound();
+      else if(act==="collapse") toggleMiniCollapse();
+      return;
+    }
+    var ord=e.target.closest(".ordno");
+    if(ord){ copyText(ord.dataset.copy, ord); return; }
+    if(!current) return;
+    var take=e.target.closest(".m-take");
+    if(take){ updateField(take.dataset.id, "handler", current.person+" "+(take.dataset.claim||"處理中")); return; }
+    var give=e.target.closest(".m-give");
+    if(give){ updateField(give.dataset.id, "status", encodeStatus("已給資料")); return; }
+    var close=e.target.closest(".m-close");
+    if(close){ updateField(close.dataset.id, "archived", String(Date.now())); return; }
+    var ed=e.target.closest(".m-edit");
+    if(ed){ var r=findRec(ed.dataset.id); if(r){ var nv=window.prompt("修改事由：", r.content); if(nv!=null){ nv=String(nv).trim(); if(nv && nv!==r.content) updateField(r.id,"content",nv); } } return; }
+  }
+  function onMiniInput(e){
+    if(e.target && e.target.classList && e.target.classList.contains("mb-color")){ saveMiniBg(e.target.value); applyMiniTheme(e.target.value); }
   }
   function fmtClock(ts){ var d=new Date(ts),p=function(n){return(n<10?"0":"")+n;}; return p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds()); }
   function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
@@ -520,22 +537,9 @@
     var tEl=miniBar && miniBar.querySelector(".mb-time");
     if(tEl) tEl.textContent = lastSyncTime ? ("更新 "+fmtClock(lastSyncTime)) : "";
   }
-  function onMiniClick(e){
-    var ord=e.target.closest(".ordno");
-    if(ord){ copyText(ord.dataset.copy, ord); return; }
-    if(!current) return;
-    var take=e.target.closest(".m-take");
-    if(take){ updateField(take.dataset.id, "handler", current.person+" "+(take.dataset.claim||"處理中")); return; }
-    var give=e.target.closest(".m-give");
-    if(give){ updateField(give.dataset.id, "status", encodeStatus("已給資料")); return; }
-    var close=e.target.closest(".m-close");
-    if(close){ if(window.confirm("結案這筆？")) updateField(close.dataset.id, "archived", String(Date.now())); return; }
-    var ed=e.target.closest(".m-edit");
-    if(ed){ var r=findRec(ed.dataset.id); if(r){ var nv=window.prompt("修改事由：", r.content); if(nv!=null){ nv=nv.trim(); if(nv && nv!==r.content) updateField(r.id,"content",nv); } } return; }
-  }
   miniBtn.addEventListener("click", async function(){
     if(pipWin){ try{ pipWin.close(); }catch(e){} pipWin=null; return; }
-    if(!miniPanel){ miniPanel=document.createElement("div"); miniPanel.addEventListener("click", onMiniClick); }
+    if(!miniPanel){ miniPanel=document.createElement("div"); }
     if(!miniBar){
       miniBar=document.createElement("div"); miniBar.className="m-bar";
       miniBar.innerHTML=
@@ -548,8 +552,6 @@
         '<span class="mb-time"></span>';
       miniColor=miniBar.querySelector(".mb-color");
       miniColor.value=loadMiniBg();
-      miniColor.addEventListener("input", function(){ saveMiniBg(miniColor.value); applyMiniTheme(miniColor.value); });
-      miniBar.addEventListener("click", onMiniBar);
     }
     if(window.documentPictureInPicture && documentPictureInPicture.requestWindow){
       try{
@@ -558,6 +560,8 @@
         var st=pipWin.document.createElement("style"); st.textContent=MINI_CSS; pipWin.document.head.appendChild(st);
         pipWin.document.body.appendChild(miniBar);
         pipWin.document.body.appendChild(miniPanel);
+        pipWin.document.addEventListener("click", onMiniAll);
+        pipWin.document.addEventListener("input", onMiniInput);
         miniColor.value=loadMiniBg(); applyMiniTheme(loadMiniBg()); applyMiniFont(); refreshMiniBarBtns();
         miniPrevChase={}; miniPrimed=false;
         pipWin.addEventListener("pagehide", function(){
