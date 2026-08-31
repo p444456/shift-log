@@ -434,7 +434,7 @@
   /* ===== 懸浮小視窗（待辦看板） ===== */
   var pipWin=null, miniPanel=null, miniBar=null, miniColor=null, miniAddBox=null, miniAudioCtx=null, miniPrevChase={}, miniPrimed=false, miniEditingId=null;
   var URGENT_MS=30*60*1000;
-  var MINI_FONT_KEY="shift-mini-fs", MINI_SOUND_KEY="shift-mini-sound", MINI_COLLAPSE_KEY="shift-mini-collapse", MINI_SIZE_KEY="shift-mini-size";
+  var MINI_FONT_KEY="shift-mini-fs", MINI_SOUND_KEY="shift-mini-sound", MINI_COLLAPSE_KEY="shift-mini-collapse", MINI_SIZE_KEY="shift-mini-size", MINI_ZOOM_KEY="shift-mini-zoom", MINI_MIN_KEY="shift-mini-min";
   var PALETTE=["#14161c","#16233a","#13261d","#241a12","#2a1620","#1b1a2e","#0a0a0a","#f2f0e9"]; // 精選：石墨/午夜藍/墨綠/暖褐/酒紅/靛紫/純黑/象牙白
   var MINI_CSS=
     "*{box-sizing:border-box;margin:0;font-family:'PingFang TC','Microsoft JhengHei',sans-serif;}"+
@@ -481,7 +481,14 @@
     ".m-take:active,.m-give:active,.m-close:active,.m-edit:active{opacity:.8;}"+
     ".ordno{color:#7fb4c4;font-weight:700;cursor:pointer;border-bottom:1px dashed currentColor;}"+
     ".ordno.copied{color:#6fcf97;border-bottom-color:transparent;}"+
-    ".m-empty{color:var(--msub);font-size:13px;text-align:center;padding:22px 0;}";
+    ".m-empty{color:var(--msub);font-size:13px;text-align:center;padding:22px 0;}"+
+    "body.mini-min .m-addbox{display:none;}"+
+    "body.mini-min .mb-btn:not([data-mb=minimize]){display:none;}"+
+    "body.mini-min .mb-sws,body.mini-min .mb-time{display:none;}"+
+    "body.mini-min .m-h,body.mini-min .m-t,body.mini-min .m-i,body.mini-min .m-empty{display:none;}"+
+    "body.mini-min .m-c{margin-bottom:0;font-size:12.5px;font-weight:700;color:var(--mfg);}"+
+    "body.mini-min{padding:6px 8px;}"+
+    "body.mini-min .m-bar{margin-bottom:4px;}";
   var MINI_BG_KEY="shift-mini-bg";
   function loadMiniBg(){ try{ return localStorage.getItem(MINI_BG_KEY) || "#14161c"; }catch(e){ return "#14161c"; } }
   function saveMiniBg(v){ try{ localStorage.setItem(MINI_BG_KEY, v); }catch(e){} }
@@ -501,6 +508,9 @@
   function loadMiniFont(){ var v=parseFloat(localStorage.getItem(MINI_FONT_KEY)); return (v>=10&&v<=20)?v:12.5; }
   function setMiniFont(v){ v=Math.max(10,Math.min(20,v)); try{localStorage.setItem(MINI_FONT_KEY,String(v));}catch(e){} applyMiniFont(); }
   function applyMiniFont(){ if(pipWin) pipWin.document.documentElement.style.setProperty("--mfs", loadMiniFont()+"px"); }
+  function loadMiniZoom(){ var v=parseFloat(localStorage.getItem(MINI_ZOOM_KEY)); return (v>=0.6&&v<=1.6)?v:1; }
+  function setMiniZoom(v){ v=Math.max(0.6,Math.min(1.6,Math.round(v*10)/10)); try{localStorage.setItem(MINI_ZOOM_KEY,String(v));}catch(e){} applyMiniZoom(); }
+  function applyMiniZoom(){ if(pipWin) pipWin.document.body.style.zoom=loadMiniZoom(); }
   function miniSoundOn(){ return localStorage.getItem(MINI_SOUND_KEY)==="on"; }
   function toggleMiniSound(){ try{localStorage.setItem(MINI_SOUND_KEY, miniSoundOn()?"off":"on");}catch(e){} refreshMiniBarBtns(); }
   function miniCollapsed(){ return localStorage.getItem(MINI_COLLAPSE_KEY)==="1"; }
@@ -520,14 +530,29 @@
     if(!miniBar) return;
     var s=miniBar.querySelector('[data-mb="sound"]'); if(s) s.textContent=miniSoundOn()?"🔔 音效開":"🔕 音效關";
     var c=miniBar.querySelector('[data-mb="collapse"]'); if(c) c.textContent=miniCollapsed()?"▦ 展開待處理":"▤ 收合待處理";
+    refreshMiniMinBtn();
+  }
+  function toggleMiniMin(){
+    if(!pipWin) return;
+    var on=!pipWin.document.body.classList.contains("mini-min");
+    pipWin.document.body.classList.toggle("mini-min", on);
+    try{ localStorage.setItem(MINI_MIN_KEY, on?"1":"0"); }catch(e){}
+    refreshMiniMinBtn();
+  }
+  function refreshMiniMinBtn(){
+    if(!miniBar) return;
+    var b=miniBar.querySelector('[data-mb="minimize"]');
+    var on=pipWin && pipWin.document.body.classList.contains("mini-min");
+    if(b) b.textContent = on ? "▢ 展開" : "—";
   }
   function onMiniAll(e){
     var mb=e.target.closest(".mb-btn");
     if(mb){
       var act=mb.dataset.mb;
-      if(act==="palette"){ var sws=miniBar.querySelector(".mb-sws"); if(sws) sws.classList.toggle("show"); }
-      else if(act==="fs-") setMiniFont(loadMiniFont()-1);
-      else if(act==="fs+") setMiniFont(loadMiniFont()+1);
+      if(act==="minimize"){ toggleMiniMin(); }
+      else if(act==="palette"){ var sws=miniBar.querySelector(".mb-sws"); if(sws) sws.classList.toggle("show"); }
+      else if(act==="fs-") setMiniZoom(loadMiniZoom()-0.1);
+      else if(act==="fs+") setMiniZoom(loadMiniZoom()+0.1);
       else if(act==="refresh"){ if(USE_CLOUD) loadCloud(false); else updateMini(); }
       else if(act==="sound") toggleMiniSound();
       else if(act==="collapse") toggleMiniCollapse();
@@ -698,9 +723,10 @@
     if(!miniBar){
       miniBar=document.createElement("div"); miniBar.className="m-bar";
       miniBar.innerHTML=
+        '<button class="mb-btn" data-mb="minimize" title="最小化">—</button>'+
         '<button class="mb-btn" data-mb="palette">🎨 背景</button>'+
-        '<button class="mb-btn" data-mb="fs-" title="縮小字級">A-</button>'+
-        '<button class="mb-btn" data-mb="fs+" title="放大字級">A+</button>'+
+        '<button class="mb-btn" data-mb="fs-" title="縮小整體">A-</button>'+
+        '<button class="mb-btn" data-mb="fs+" title="放大整體">A+</button>'+
         '<button class="mb-btn" data-mb="refresh">🔄 更新</button>'+
         '<button class="mb-btn" data-mb="sound">🔕 音效關</button>'+
         '<button class="mb-btn" data-mb="collapse">▤ 收合待處理</button>'+
@@ -726,7 +752,8 @@
         pipWin.document.addEventListener("input", onMiniInput);
         pipWin.document.addEventListener("change", onMiniChange);
         pipWin.document.addEventListener("keydown", onMiniKey);
-        applyMiniTheme(loadMiniBg()); applyMiniFont(); refreshMiniBarBtns();
+        if(localStorage.getItem(MINI_MIN_KEY)==="1") pipWin.document.body.classList.add("mini-min");
+        applyMiniTheme(loadMiniBg()); applyMiniFont(); applyMiniZoom(); refreshMiniBarBtns();
         miniPrevChase={}; miniPrimed=false; miniEditingId=null;
         pipWin.addEventListener("pagehide", function(){
           miniEditingId=null;
