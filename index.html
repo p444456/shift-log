@@ -709,8 +709,33 @@
   content.addEventListener("input", function(){ addBtn.disabled=content.value.trim()===""; });
   addBtn.addEventListener("click", addRecord);
   function summ(t){ t=t.replace(/\s+/g," ").trim(); return t.length>16 ? t.slice(0,16)+"…" : t; }
+  function extractOrders(text){
+    var re=/[0-9A-Za-z]{8,}/g, m, out=[]; text=String(text||"");
+    while((m=re.exec(text))){ if((m[0].match(/[0-9]/g)||[]).length>=8) out.push(m[0]); }
+    return out;
+  }
+  function findDuplicate(text){
+    var orders=extractOrders(text), plain=text.trim();
+    for(var i=0;i<records.length;i++){
+      var r=records[i]; if(isArchived(r)) continue;
+      if(orders.length){
+        var ro=extractOrders(r.content);
+        for(var j=0;j<orders.length;j++){ if(ro.indexOf(orders[j])>=0) return { rec:r, order:orders[j] }; }
+      }else if(r.content.trim()===plain){ return { rec:r, order:null }; }
+    }
+    return null;
+  }
   function addRecord(){
     var text=content.value.trim(); if(!text || !current) return;
+    var dup=findDuplicate(text);
+    if(dup){
+      var d=dup.rec, ps=parseStatus(d.status);
+      var msg=(dup.order ? ("這張訂單「"+dup.order+"」可能已經登記過：") : "這筆事由可能已經登記過：")+
+        "\n\n"+d.shift+" "+d.person+"（"+fmt(d.time)+"）\n"+d.content+
+        "\n狀態："+ps.base+(d.handler?("／"+d.handler):"")+
+        "\n\n仍要再登記一筆嗎？";
+      if(!window.confirm(msg)) return;
+    }
     var handlerVal = newHandler.value ? (current.person+" "+newHandler.value) : "";
     var rec={ id:Date.now()+"-"+Math.random().toString(36).slice(2,7), content:text,
       shift:current.shift, person:current.person, time:Date.now(),
