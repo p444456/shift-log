@@ -210,6 +210,7 @@
     <div class="who"><span class="badge" id="curShift">—</span><span class="who-name" id="curPerson">—</span></div>
     <span class="counts" id="counts"></span>
     <span class="spacer"></span>
+    <button class="tbtn" id="miniBtn" title="開啟懸浮小視窗">⧉</button>
     <button class="tbtn" id="notifyBtn" title="開啟待跟催通知">🔕</button>
     <button class="tbtn" id="themeBtn" title="深色模式（僅本裝置）">🌙</button>
     <button class="logout" id="logoutBtn">登出</button>
@@ -313,7 +314,7 @@
       statusBox=$("status"), statusText=$("statusText"),
       tabRecords=$("tab-records"), tabLogs=$("tab-logs"),
       paneRecords=$("pane-records"), paneLogs=$("pane-logs"),
-      counts=$("counts"), themeBtn=$("themeBtn"), exportBtn=$("exportBtn"), notifyBtn=$("notifyBtn");
+      counts=$("counts"), themeBtn=$("themeBtn"), exportBtn=$("exportBtn"), notifyBtn=$("notifyBtn"), miniBtn=$("miniBtn");
   var SHIFT_COLOR={ "早班":"var(--zao)", "中班":"var(--zhong)", "晚班":"var(--wan)" };
 
   /* ===== 深色模式（僅本裝置，不影響他人） ===== */
@@ -371,6 +372,53 @@
     });
     Object.keys(notified).forEach(function(id){ if(!active[id]) delete notified[id]; });
     notifyPrimed=true;
+  }
+
+  /* ===== 懸浮小視窗（待辦看板） ===== */
+  var pipWin=null, miniPanel=null;
+  var MINI_CSS=
+    "*{box-sizing:border-box;margin:0;font-family:'PingFang TC','Microsoft JhengHei',sans-serif;}"+
+    "body{background:#1a1c22;color:#e8e8ec;padding:10px;}"+
+    ".m-h{font-size:14px;font-weight:700;letter-spacing:.08em;margin-bottom:8px;}"+
+    ".m-c{font-size:12px;color:#9a9aa6;margin-bottom:10px;}"+
+    ".m-t{font-size:11px;color:#9a9aa6;margin:10px 0 5px;letter-spacing:.05em;}"+
+    ".m-i{background:#24272f;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px;line-height:1.4;border-left:3px solid #4a4d57;word-break:break-word;}"+
+    ".m-i.warn{border-left-color:#e0655c;background:#3a2725;animation:mb 1.1s ease-in-out infinite;}"+
+    "@keyframes mb{0%,100%{background:#3a2725;}50%{background:#5a2e2a;}}"+
+    ".m-empty{color:#9a9aa6;font-size:13px;text-align:center;padding:24px 0;}";
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function updateMini(){
+    if(!miniPanel) return;
+    var now=Date.now(), todo=[], chase=[];
+    records.forEach(function(r){
+      if(isArchived(r)) return;
+      var ps=parseStatus(r.status);
+      if(ps.base==="待處理") todo.push(r);
+      if(ps.base==="已給資料" && ps.at && (now-ps.at)>=WARN_MS && !r.handler) chase.push(r);
+    });
+    var h='<div class="m-h">四方相通 · 待辦</div>';
+    h+='<div class="m-c">待處理 '+todo.length+'　待跟催 '+chase.length+'</div>';
+    if(chase.length){ h+='<div class="m-t">🔴 待跟催</div>'; chase.forEach(function(r){ h+='<div class="m-i warn">'+esc(summ(r.content))+'</div>'; }); }
+    if(todo.length){ h+='<div class="m-t">待處理</div>'; todo.forEach(function(r){ h+='<div class="m-i">'+esc(summ(r.content))+'</div>'; }); }
+    if(!chase.length && !todo.length) h+='<div class="m-empty">目前沒有待辦 🎉</div>';
+    miniPanel.innerHTML=h;
+  }
+  miniBtn.addEventListener("click", async function(){
+    if(pipWin){ try{ pipWin.close(); }catch(e){} pipWin=null; return; }
+    if(!miniPanel){ miniPanel=document.createElement("div"); }
+    if(window.documentPictureInPicture && documentPictureInPicture.requestWindow){
+      try{
+        pipWin = await documentPictureInPicture.requestWindow({ width:300, height:420 });
+        var st=pipWin.document.createElement("style"); st.textContent=MINI_CSS; pipWin.document.head.appendChild(st);
+        pipWin.document.body.appendChild(miniPanel);
+        pipWin.addEventListener("pagehide", function(){ pipWin=null; });
+        updateMini();
+      }catch(e){ pipWin=null; openMiniFallback(); }
+    }else{ openMiniFallback(); }
+  });
+  function openMiniFallback(){
+    var w=window.open(location.href, "shift-mini", "width=380,height=600");
+    if(!w) alert("瀏覽器擋掉了小視窗，請允許此網站開啟彈出視窗後再試。");
   }
 
   /* 填充登記表單的下拉 */
@@ -433,6 +481,7 @@
     Array.prototype.forEach.call(shiftTabs.children, function(b){ b.setAttribute("aria-pressed","false"); });
     band.style.background="linear-gradient(90deg,var(--zao),var(--zhong),var(--wan))";
     document.documentElement.style.setProperty("--shift","var(--brand)");
+    if(pipWin){ try{ pipWin.close(); }catch(e){} pipWin=null; }
     switchTab("records"); refreshLoginBtn(); counts.innerHTML=""; notified={}; notifyPrimed=false; window.scrollTo(0,0);
   });
 
@@ -699,6 +748,7 @@
     var html='<span class="cbadge">待處理 '+todo+'</span>';
     if(chase>0) html+='<span class="cbadge warn">待跟催 '+chase+'</span>';
     counts.innerHTML=html;
+    updateMini();
   }
 
   /* ===== 一鍵匯出當天紀錄（CSV） ===== */
