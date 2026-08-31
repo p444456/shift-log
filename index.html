@@ -25,6 +25,8 @@
   body.dark select,
   body.dark .edit-ta{background-color:#2c2f38;color:var(--ink);}
   body.dark .refresh{background:#2c2f38;}
+  body.dark select option{background:#2a2d36;color:#e8e8ec;}
+  body.dark .pick option{background:#2a2d36;color:#e8e8ec;}
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{font-family:"PingFang TC","PingFang SC","Microsoft JhengHei","Microsoft YaHei",-apple-system,"Segoe UI",sans-serif;
@@ -440,9 +442,12 @@
     "body{background:var(--mbg);color:var(--mfg);padding:8px;}"+
     ".m-bar{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--msub);margin-bottom:6px;flex-wrap:wrap;}"+
     ".mb-lbl{display:inline-flex;align-items:center;gap:5px;}"+
-    ".mb-sws{display:inline-flex;gap:5px;}"+
-    ".mb-sw{width:17px;height:17px;border-radius:50%;border:none;cursor:pointer;padding:0;box-shadow:0 0 0 1px rgba(128,128,128,.4);}"+
+    ".mb-sws{display:none;gap:5px;flex-basis:100%;padding:4px 0 2px;}"+
+    ".mb-sws.show{display:inline-flex;}"+
+    ".mb-sw{width:19px;height:19px;border-radius:50%;border:none;cursor:pointer;padding:0;box-shadow:0 0 0 1px rgba(128,128,128,.4);}"+
     ".mb-sw.active{outline:2px solid var(--mfg);outline-offset:1px;}"+
+    ".m-claim option,.m-claim{color:var(--mfg);}"+
+    ".m-claim option{background:#ffffff;color:#222;}"+
     ".mb-btn{background:transparent;border:1px solid var(--mline);color:inherit;font-size:11px;padding:2px 7px;border-radius:5px;cursor:pointer;line-height:1.5;}"+
     ".mb-time{margin-left:auto;font-size:10px;color:var(--msub);white-space:nowrap;}"+
     ".m-addbox{display:flex;gap:6px;margin-bottom:8px;}"+
@@ -520,7 +525,8 @@
     var mb=e.target.closest(".mb-btn");
     if(mb){
       var act=mb.dataset.mb;
-      if(act==="fs-") setMiniFont(loadMiniFont()-1);
+      if(act==="palette"){ var sws=miniBar.querySelector(".mb-sws"); if(sws) sws.classList.toggle("show"); }
+      else if(act==="fs-") setMiniFont(loadMiniFont()-1);
       else if(act==="fs+") setMiniFont(loadMiniFont()+1);
       else if(act==="refresh"){ if(USE_CLOUD) loadCloud(false); else updateMini(); }
       else if(act==="sound") toggleMiniSound();
@@ -692,15 +698,16 @@
     if(!miniBar){
       miniBar=document.createElement("div"); miniBar.className="m-bar";
       miniBar.innerHTML=
-        '<span class="mb-lbl">背景<span class="mb-sws">'+
-          PALETTE.map(function(c){ return '<button class="mb-sw" data-bg="'+c+'" style="background:'+c+'"></button>'; }).join('')+
-        '</span></span>'+
+        '<button class="mb-btn" data-mb="palette">🎨 背景</button>'+
         '<button class="mb-btn" data-mb="fs-" title="縮小字級">A-</button>'+
         '<button class="mb-btn" data-mb="fs+" title="放大字級">A+</button>'+
         '<button class="mb-btn" data-mb="refresh">🔄 更新</button>'+
         '<button class="mb-btn" data-mb="sound">🔕 音效關</button>'+
         '<button class="mb-btn" data-mb="collapse">▤ 收合待處理</button>'+
-        '<span class="mb-time"></span>';
+        '<span class="mb-time"></span>'+
+        '<span class="mb-sws">'+
+          PALETTE.map(function(c){ return '<button class="mb-sw" data-bg="'+c+'" style="background:'+c+'"></button>'; }).join('')+
+        '</span>';
     }
     if(!miniAddBox){
       miniAddBox=document.createElement("div"); miniAddBox.className="m-addbox";
