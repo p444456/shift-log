@@ -126,6 +126,10 @@
   .rec-time{font-size:11.5px;color:var(--ink-soft);}
   .rec-main{flex:1;min-width:0;display:flex;align-items:center;gap:14px;}
   .rec-body{flex:1;min-width:0;font-size:15.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
+  .ordno{color:var(--shift);font-weight:700;cursor:pointer;border-bottom:1px dashed currentColor;}
+  .ordno:hover{background:#eef0f4;border-radius:3px;}
+  .ordno.copied{color:var(--ok);border-bottom-color:transparent;}
+  body.dark .ordno:hover{background:rgba(255,255,255,.09);}
   .rec-fields{flex:none;display:flex;gap:10px;align-items:center;}
   .minifield{display:flex;align-items:center;gap:6px;}
   .minifield .k{font-size:12px;color:var(--ink-soft);}
@@ -285,7 +289,7 @@
   var LOG_KEY = "shift-logs-v2";
   var POLL_MS = 20000;
   var LOG_TTL_MS = 24*60*60*1000;
-  var STAFF = { "早班":["TT","佩佩","PATTY","77","YUEE","猪猪"], "中班":["阿信","軒軒","小楓"], "晚班":["小乐","阿睿","HO"] };
+  var STAFF = { "早班":["TT","佩佩","PATTY","77","YUEE","猪猪","工讀生"], "中班":["阿信","軒軒","小楓","工讀生"], "晚班":["小乐","阿睿","HO","工讀生"] };
   var STATUSES = ["待處理","已給資料"];
   var STATUS_CLASS = { "待處理":"st-todo", "已給資料":"st-done" };
   var CLAIMS = ["處理中","補單中"];
@@ -379,24 +383,28 @@
   var MINI_CSS=
     "*{box-sizing:border-box;margin:0;font-family:'PingFang TC','Microsoft JhengHei',sans-serif;}"+
     ":root{--mbg:#1a1c22;--mfg:#e8e8ec;--msub:#9a9aa6;--mcard:rgba(255,255,255,.07);--mline:rgba(255,255,255,.15);}"+
-    "body{background:var(--mbg);color:var(--mfg);padding:10px;}"+
-    ".m-bar{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--msub);margin-bottom:8px;}"+
-    ".m-bar input{width:28px;height:20px;border:none;background:none;padding:0;cursor:pointer;}"+
-    ".m-h{font-size:14px;font-weight:700;letter-spacing:.08em;margin-bottom:6px;}"+
-    ".m-c{font-size:12px;color:var(--msub);margin-bottom:10px;}"+
-    ".m-t{font-size:11px;color:var(--msub);margin:12px 0 5px;letter-spacing:.05em;}"+
-    ".m-i{background:var(--mcard);border-radius:8px;padding:9px 11px;margin-bottom:7px;border-left:3px solid var(--mline);}"+
+    "body{background:var(--mbg);color:var(--mfg);padding:8px;}"+
+    ".m-bar{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--msub);margin-bottom:6px;}"+
+    ".m-bar input{width:26px;height:18px;border:none;background:none;padding:0;cursor:pointer;}"+
+    ".m-h{font-size:13px;font-weight:700;letter-spacing:.06em;margin-bottom:3px;}"+
+    ".m-c{font-size:11px;color:var(--msub);margin-bottom:6px;}"+
+    ".m-t{font-size:10.5px;color:var(--msub);margin:8px 0 4px;letter-spacing:.05em;}"+
+    ".m-i{background:var(--mcard);border-radius:7px;padding:7px 9px;margin-bottom:5px;border-left:3px solid var(--mline);}"+
     ".m-i.warn{border-left-color:#e0655c;background:rgba(224,101,92,.16);animation:mb 1.1s ease-in-out infinite;}"+
     "@keyframes mb{0%,100%{background:rgba(224,101,92,.12);}50%{background:rgba(224,101,92,.32);}}"+
-    ".m-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;}"+
-    ".m-txt{flex:1;min-width:0;font-size:13px;line-height:1.4;word-break:break-word;}"+
-    ".m-age{flex:none;font-size:11px;color:#f0857c;font-weight:700;white-space:nowrap;}"+
-    ".m-sub{font-size:11px;color:var(--msub);margin-top:4px;}"+
-    ".m-btns{display:flex;gap:6px;margin-top:8px;}"+
-    ".m-take{flex:1;padding:6px;border:none;border-radius:6px;background:#3d8ea0;color:#fff;font-size:12px;font-weight:700;cursor:pointer;}"+
+    ".m-row{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;}"+
+    ".m-txt{flex:1;min-width:0;font-size:12.5px;line-height:1.35;word-break:break-word;}"+
+    ".m-age{flex:none;font-size:10.5px;color:#f0857c;font-weight:700;white-space:nowrap;}"+
+    ".m-sub{font-size:10.5px;color:var(--msub);margin-top:2px;}"+
+    ".m-btns{display:flex;gap:5px;margin-top:6px;}"+
+    ".m-take,.m-give{flex:1;padding:5px;border:none;border-radius:5px;color:#fff;font-size:11.5px;font-weight:700;cursor:pointer;}"+
+    ".m-take{background:#3d8ea0;}"+
     ".m-take.m-supp{background:#b3453c;}"+
-    ".m-take:active{opacity:.8;}"+
-    ".m-empty{color:var(--msub);font-size:13px;text-align:center;padding:26px 0;}";
+    ".m-give{background:#c9772a;}"+
+    ".m-take:active,.m-give:active{opacity:.8;}"+
+    ".ordno{color:#7fb4c4;font-weight:700;cursor:pointer;border-bottom:1px dashed currentColor;}"+
+    ".ordno.copied{color:#6fcf97;border-bottom-color:transparent;}"+
+    ".m-empty{color:var(--msub);font-size:13px;text-align:center;padding:22px 0;}";
   var MINI_BG_KEY="shift-mini-bg";
   function loadMiniBg(){ try{ return localStorage.getItem(MINI_BG_KEY) || "#1a1c22"; }catch(e){ return "#1a1c22"; } }
   function saveMiniBg(v){ try{ localStorage.setItem(MINI_BG_KEY, v); }catch(e){} }
@@ -413,6 +421,17 @@
     root.style.setProperty("--mline", light?"rgba(0,0,0,.15)":"rgba(255,255,255,.15)");
   }
   function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function miniBody(text){
+    text=String(text||""); var re=/[0-9A-Za-z]{8,}/g, last=0, m, out="";
+    while((m=re.exec(text))){
+      var tok=m[0], digits=(tok.match(/[0-9]/g)||[]).length;
+      if(m.index>last) out+=esc(text.slice(last,m.index));
+      out += (digits>=8) ? ('<span class="ordno" data-copy="'+esc(tok)+'">'+esc(tok)+'</span>') : esc(tok);
+      last=m.index+tok.length;
+    }
+    if(last<text.length) out+=esc(text.slice(last));
+    return out;
+  }
   function fmtMin(ms){ var m=Math.floor(ms/60000); return m<60 ? (m+" 分") : (Math.floor(m/60)+" 時"+(m%60)+" 分"); }
   function updateMini(){
     if(!miniPanel) return;
@@ -429,7 +448,7 @@
       h+='<div class="m-t">🔴 待跟催</div>';
       chase.forEach(function(r){
         var mins=fmtMin(now-parseStatus(r.status).at);
-        h+='<div class="m-i warn"><div class="m-row"><span class="m-txt">'+esc(summ(r.content))+'</span><span class="m-age">已 '+mins+'</span></div>'+
+        h+='<div class="m-i warn"><div class="m-row"><span class="m-txt">'+miniBody(r.content)+'</span><span class="m-age">已 '+mins+'</span></div>'+
            '<div class="m-sub">'+r.shift+' · '+esc(r.person)+'</div>'+
            '<div class="m-btns"><button class="m-take" data-id="'+r.id+'" data-claim="處理中">處理中</button>'+
            '<button class="m-take m-supp" data-id="'+r.id+'" data-claim="補單中">補單中</button></div></div>';
@@ -438,15 +457,22 @@
     if(todo.length){
       h+='<div class="m-t">待處理</div>';
       todo.forEach(function(r){
-        h+='<div class="m-i"><div class="m-row"><span class="m-txt">'+esc(summ(r.content))+'</span></div><div class="m-sub">'+r.shift+' · '+esc(r.person)+'</div></div>';
+        h+='<div class="m-i"><div class="m-row"><span class="m-txt">'+miniBody(r.content)+'</span></div>'+
+           '<div class="m-sub">'+r.shift+' · '+esc(r.person)+'</div>'+
+           '<div class="m-btns"><button class="m-give" data-id="'+r.id+'">標記已給資料</button></div></div>';
       });
     }
     if(!chase.length && !todo.length) h+='<div class="m-empty">目前沒有待辦 🎉</div>';
     miniPanel.innerHTML=h;
   }
   function onMiniClick(e){
-    var b=e.target.closest(".m-take"); if(!b || !current) return;
-    updateField(b.dataset.id, "handler", current.person+" "+(b.dataset.claim||"處理中"));
+    var ord=e.target.closest(".ordno");
+    if(ord){ copyText(ord.dataset.copy, ord); return; }
+    if(!current) return;
+    var take=e.target.closest(".m-take");
+    if(take){ updateField(take.dataset.id, "handler", current.person+" "+(take.dataset.claim||"處理中")); return; }
+    var give=e.target.closest(".m-give");
+    if(give){ updateField(give.dataset.id, "status", encodeStatus("已給資料")); return; }
   }
   miniBtn.addEventListener("click", async function(){
     if(pipWin){ try{ pipWin.close(); }catch(e){} pipWin=null; return; }
@@ -664,6 +690,42 @@
   search.addEventListener("input", renderRecords);
   function renderAll(){ renderRecords(); renderLogs(); }
 
+  /* 事由裡「像訂單號的長串」自動變成可點擊複製 */
+  function renderBody(bodyEl, text){
+    bodyEl.textContent="";
+    text=String(text||"");
+    var re=/[0-9A-Za-z]{8,}/g, last=0, m;
+    while((m=re.exec(text))){
+      var tok=m[0], digits=(tok.match(/[0-9]/g)||[]).length;
+      if(m.index>last) bodyEl.appendChild(document.createTextNode(text.slice(last,m.index)));
+      if(digits>=8){
+        var span=document.createElement("span"); span.className="ordno"; span.textContent=tok; span.title="點擊複製";
+        span.addEventListener("click", (function(t){ return function(){ copyText(t, this); }; })(tok));
+        bodyEl.appendChild(span);
+      }else{
+        bodyEl.appendChild(document.createTextNode(tok));
+      }
+      last=m.index+tok.length;
+    }
+    if(last<text.length) bodyEl.appendChild(document.createTextNode(text.slice(last)));
+  }
+  function copyText(t, el){
+    var flash=function(){
+      if(!el) return;
+      var old=el.textContent; el.classList.add("copied"); el.textContent="已複製 ✓";
+      setTimeout(function(){ el.textContent=old; el.classList.remove("copied"); }, 1000);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(flash).catch(function(){ fallbackCopy(t, flash); });
+    }else fallbackCopy(t, flash);
+  }
+  function fallbackCopy(t, done){
+    try{
+      var ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0";
+      document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); done();
+    }catch(e){}
+  }
+
   function isArchived(r){ var a=r.archived; return !!a && a!=="0"; }
   function archivedAt(r){ var t=Number(r.archived); return t>1e12 ? t : 0; } // 只認合理的時間戳
 
@@ -694,7 +756,7 @@
       meta.innerHTML='<span class="tag" data-shift="'+r.shift+'">'+r.shift+'</span><span class="rec-person"></span><span class="rec-time">'+fmt(r.time)+'</span>';
       meta.querySelector(".rec-person").textContent=r.person;
 
-      var body=document.createElement("div"); body.className="rec-body"; body.textContent=r.content;
+      var body=document.createElement("div"); body.className="rec-body"; renderBody(body, r.content);
 
       var ps=parseStatus(r.status); var baseStatus=ps.base;
       el.dataset.base=baseStatus; el.dataset.at=ps.at||0; el.dataset.handler=r.handler||""; el.dataset.archived=isArchived(r)?"1":"";
