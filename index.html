@@ -118,6 +118,21 @@
   body.dark .board-btn{background:rgba(255,255,255,.08);border-color:#5a5330;color:#e6d28a;}
   body.dark .board-body textarea{background:#2a2818;border-color:#4a4526;color:#e6dcae;}
   .toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;padding:10px 22px;border-radius:999px;font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:opacity .25s,transform .25s;z-index:9999;pointer-events:none;}
+  .rmodal-mask{position:fixed;inset:0;background:rgba(40,30,22,.45);display:none;align-items:center;justify-content:center;z-index:10000;padding:20px;}
+  .rmodal-mask.show{display:flex;}
+  .rmodal{width:100%;max-width:360px;background:var(--card);border-radius:var(--radius);box-shadow:0 20px 60px rgba(50,35,25,.35);padding:20px;animation:pop .18s ease;}
+  .rmodal-h{font-size:16px;font-weight:800;color:var(--ink);margin-bottom:4px;}
+  .rmodal-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rmodal-quick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+  .rmodal-quick button{padding:10px;border:1px solid var(--line);background:var(--card2);color:var(--ink);border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;transition:.12s;}
+  .rmodal-quick button:hover{border-color:var(--brand);color:var(--brand);}
+  .rmodal-custom{display:flex;align-items:center;gap:8px;padding-top:14px;border-top:1px solid var(--line);margin-bottom:16px;}
+  .rmodal-lbl{font-size:13px;color:var(--ink-soft);white-space:nowrap;}
+  .rmodal-custom input{flex:1;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card2);color:var(--ink);font-size:13.5px;font-family:inherit;}
+  .rmodal-custom #remindSet{padding:8px 14px;border:none;border-radius:9px;background:var(--brand);color:#fff;font-size:13px;font-weight:700;cursor:pointer;}
+  .rmodal-foot{display:flex;justify-content:space-between;align-items:center;}
+  .rmodal-clear{background:none;border:none;color:var(--danger);font-size:13px;font-weight:600;cursor:pointer;padding:6px;}
+  .rmodal-cancel{background:var(--card2);border:1px solid var(--line);color:var(--ink-soft);font-size:13px;padding:8px 18px;border-radius:9px;cursor:pointer;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   body.dark .toast{background:#3a3d47;}
 
@@ -368,6 +383,33 @@
     </div>
   </div>
 </section>
+
+<!-- 提醒設定面板 -->
+<div class="rmodal-mask" id="remindModal">
+  <div class="rmodal">
+    <div class="rmodal-h">⏰ 設定提醒</div>
+    <div class="rmodal-sub" id="remindSub"></div>
+    <div class="rmodal-quick" id="remindQuick">
+      <button data-min="15">15 分鐘後</button>
+      <button data-min="30">30 分鐘後</button>
+      <button data-min="60">1 小時後</button>
+      <button data-min="120">2 小時後</button>
+      <button data-today="12:00">今天 12:00</button>
+      <button data-today="18:00">今天 18:00</button>
+      <button data-tomorrow="09:00">明天 09:00</button>
+      <button data-tomorrow="14:00">明天 14:00</button>
+    </div>
+    <div class="rmodal-custom">
+      <span class="rmodal-lbl">自訂</span>
+      <input type="datetime-local" id="remindInput">
+      <button id="remindSet">設定</button>
+    </div>
+    <div class="rmodal-foot">
+      <button class="rmodal-clear" id="remindClear">清除提醒</button>
+      <button class="rmodal-cancel" id="remindCancel">取消</button>
+    </div>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -1135,22 +1177,35 @@
     return d.toDateString()===now.toDateString() ? ("今天 "+hm) : ((d.getMonth()+1)+"/"+d.getDate()+" "+hm); }
   function toLocalInput(ts){ var d=new Date(ts),p=function(n){return(n<10?"0":"")+n;};
     return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes()); }
+  var remindTargetId=null;
+  function todayAt(hm){ var p=hm.split(":"),d=new Date(); d.setHours(+p[0],+p[1],0,0); return d.getTime(); }
   function openRemindPicker(id){
     var r=findRec(id); if(!r) return;
-    var inp=document.createElement("input"); inp.type="datetime-local";
-    inp.value = hasRemind(r) ? toLocalInput(remindAt(r)) : toLocalInput(Date.now()+3600000);
-    inp.style.position="fixed"; inp.style.left="-9999px"; inp.style.opacity="0";
-    document.body.appendChild(inp);
-    var done=false;
-    inp.addEventListener("change", function(){
-      done=true;
-      if(inp.value) updateField(id,"remind", String(new Date(inp.value).getTime()));
-      if(inp.parentNode) inp.parentNode.removeChild(inp);
-    });
-    setTimeout(function(){ if(!done && inp.parentNode){ /* 留著等選 */ } }, 100);
-    if(inp.showPicker){ try{ inp.showPicker(); }catch(e){ inp.focus(); } } else inp.focus();
-    inp.addEventListener("blur", function(){ setTimeout(function(){ if(!done && inp.parentNode) inp.parentNode.removeChild(inp); }, 300); });
+    remindTargetId=id;
+    $("remindSub").textContent=summ(r.content);
+    $("remindInput").value = hasRemind(r) ? toLocalInput(remindAt(r)) : toLocalInput(Date.now()+3600000);
+    $("remindClear").style.display = hasRemind(r) ? "" : "none";
+    $("remindModal").classList.add("show");
   }
+  function closeRemind(){ $("remindModal").classList.remove("show"); remindTargetId=null; }
+  (function(){
+    var rm=$("remindModal");
+    $("remindQuick").addEventListener("click", function(e){
+      var b=e.target.closest("button"); if(!b || !remindTargetId) return;
+      var ts=0;
+      if(b.dataset.min) ts=Date.now()+Number(b.dataset.min)*60000;
+      else if(b.dataset.today) ts=todayAt(b.dataset.today);
+      else if(b.dataset.tomorrow) ts=todayAt(b.dataset.tomorrow)+86400000;
+      if(ts){ updateField(remindTargetId,"remind",String(ts)); closeRemind(); }
+    });
+    $("remindSet").addEventListener("click", function(){
+      var v=$("remindInput").value;
+      if(v && remindTargetId){ updateField(remindTargetId,"remind",String(new Date(v).getTime())); closeRemind(); }
+    });
+    $("remindClear").addEventListener("click", function(){ if(remindTargetId){ updateField(remindTargetId,"remind",""); closeRemind(); } });
+    $("remindCancel").addEventListener("click", closeRemind);
+    rm.addEventListener("click", function(e){ if(e.target===rm) closeRemind(); });
+  })();
 
   function renderRecords(){
     var f=filter.value;
