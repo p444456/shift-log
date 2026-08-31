@@ -407,7 +407,7 @@
     ".m-take{background:#3d8ea0;}"+
     ".m-take.m-supp{background:#b3453c;}"+
     ".m-give{background:#c9772a;}"+
-    ".m-close,.m-edit{flex:none;background:transparent;border:1px solid var(--mline);color:var(--msub);font-size:11px;padding:4px 8px;border-radius:5px;cursor:pointer;}"+
+    ".m-close,.m-edit,.m-revert{flex:none;background:transparent;border:1px solid var(--mline);color:var(--msub);font-size:11px;padding:4px 8px;border-radius:5px;cursor:pointer;}"+
     ".m-claim{width:100%;margin-top:6px;padding:5px 8px;border:1px solid var(--mline);border-radius:5px;background:var(--mcard);color:var(--mfg);font-size:12px;font-weight:700;cursor:pointer;}"+
     ".m-claim.c-doing{color:#7fb4c4;border-color:#7fb4c4;}"+
     ".m-claim.c-supp{color:#ff6b60;border-color:#ff6b60;}"+
@@ -482,6 +482,8 @@
       return;
     }
     if(!current) return;
+    var revert=e.target.closest(".m-revert");
+    if(revert){ updateField(revert.dataset.id, "status", "待處理"); return; }
     var give=e.target.closest(".m-give");
     if(give){ updateField(give.dataset.id, "status", encodeStatus("已給資料")); return; }
     var close=e.target.closest(".m-close");
@@ -567,7 +569,8 @@
         h+='<div class="m-i'+(chasing?' warn':'')+(urgent?' urgent':'')+'"><div class="m-row"><span class="m-txt">'+miniBody(r.content)+'</span><span class="m-age">已 '+fmtMin(age)+'</span></div>'+
            '<div class="m-sub">'+r.shift+' · '+esc(r.person)+'</div>'+
            claimCell(r)+
-           '<div class="m-btns"><button class="m-edit" data-id="'+r.id+'">編輯</button>'+
+           '<div class="m-btns"><button class="m-revert" data-id="'+r.id+'">退回待處理</button>'+
+           '<button class="m-edit" data-id="'+r.id+'">編輯</button>'+
            '<button class="m-close" data-id="'+r.id+'">結案</button></div></div>';
       });
     }
