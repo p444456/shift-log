@@ -77,6 +77,23 @@
   .status.cloud{background:#eaf5f0;color:#256b52;} .status.cloud .dot{background:var(--ok);}
   .status.local{background:#fbf3e6;color:#8a5a12;} .status.local .dot{background:var(--zao);}
   .status.err{background:#faeceb;color:#93362e;} .status.err .dot{background:var(--danger);}
+  .board{background:#fdf3c4;border-radius:12px;box-shadow:0 4px 14px rgba(180,150,40,.18);margin-bottom:16px;overflow:hidden;border:1px solid #f0e39a;}
+  .board-head{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;}
+  .board-title{font-size:14px;font-weight:700;color:#7a5b16;letter-spacing:.04em;}
+  .board-date{font-size:12px;color:#a98a3d;}
+  .board-tools{margin-left:auto;display:flex;gap:6px;}
+  .board-btn{background:rgba(255,255,255,.6);border:1px solid #e6d68a;color:#7a5b16;font-size:12px;padding:4px 10px;border-radius:7px;cursor:pointer;}
+  .board-btn:hover{background:#fff;}
+  .board-body{padding:0 14px 12px;}
+  .board.collapsed .board-body{display:none;}
+  .board-body textarea{width:100%;min-height:70px;resize:vertical;border:1px solid #ecdd8e;border-radius:9px;background:#fffbe8;padding:10px 12px;font-size:15px;color:#5a4a1e;font-family:inherit;line-height:1.6;}
+  .board-body textarea::placeholder{color:#c4ad63;}
+  .board-foot{display:flex;justify-content:flex-end;min-height:16px;margin-top:5px;}
+  .board-status{font-size:12px;color:#2f8f6b;}
+  body.dark .board{background:#33301f;border-color:#4a4526;}
+  body.dark .board-title{color:#e6d28a;} body.dark .board-date{color:#b0a26a;}
+  body.dark .board-btn{background:rgba(255,255,255,.08);border-color:#5a5330;color:#e6d28a;}
+  body.dark .board-body textarea{background:#2a2818;border-color:#4a4526;color:#e6dcae;}
   .toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;padding:10px 22px;border-radius:999px;font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:opacity .25s,transform .25s;z-index:9999;pointer-events:none;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   body.dark .toast{background:#3a3d47;}
@@ -152,6 +169,12 @@
   .rec-acts{flex:none;display:flex;gap:2px;align-items:center;}
   .rec-edit{flex:none;background:none;border:none;color:var(--shift);font-size:13px;padding:4px 6px;border-radius:6px;}
   .rec-edit:hover{background:#eef0f4;}
+  .rec-pin{flex:none;background:none;border:none;color:var(--ink-soft);font-size:13px;padding:4px 6px;border-radius:6px;}
+  .rec-pin:hover{background:#f3efe4;color:var(--zao);}
+  .rec-pin.on{color:var(--zao);font-weight:700;}
+  .rec.pinned{background:linear-gradient(0deg,var(--card),var(--card)) padding-box,#f7f0dd;box-shadow:0 3px 12px rgba(180,140,40,.14);}
+  .rec.pinned{border-left-color:var(--zao)!important;}
+  .pin-flag{font-size:12px;}
   .rec-close{flex:none;background:none;border:none;color:var(--ok);font-size:13px;padding:4px 6px;border-radius:6px;}
   .rec-close:hover{background:#eaf5f0;}
   .rec-del{flex:none;background:none;border:none;color:var(--ink-soft);font-size:13px;padding:4px 6px;border-radius:6px;}
@@ -232,6 +255,21 @@
   <div class="wrap">
     <div class="status" id="status"><span class="dot"></span><span id="statusText">—</span></div>
 
+    <div class="board" id="board">
+      <div class="board-head" id="boardHead">
+        <span class="board-title">📌 今日公告欄</span>
+        <span class="board-date" id="boardDate"></span>
+        <span class="board-tools">
+          <button class="board-btn" id="boardClear">清空</button>
+          <button class="board-btn" id="boardToggle">收合</button>
+        </span>
+      </div>
+      <div class="board-body" id="boardBody">
+        <textarea id="boardText" placeholder="今天的重點、提醒、公告…寫在這～（大家共用同一份）"></textarea>
+        <div class="board-foot"><span class="board-status" id="boardStatus"></span></div>
+      </div>
+    </div>
+
     <div class="tabs" role="tablist">
       <button class="tab" id="tab-records" role="tab" aria-selected="true">登記紀錄</button>
       <button class="tab" id="tab-logs" role="tab" aria-selected="false">操作日誌</button>
@@ -296,6 +334,7 @@
   var API_URL  = "https://script.google.com/macros/s/AKfycbwTOlnm-ZBd_cCZmvoGxxG4gBCyGmx_AF6Ip9obX2_G-BViNzLJea3SPLkcQcdaX7fGHw/exec";
 
   var REC_KEY = "shift-records-v2";
+  var BOARD_ID = "__board__";
   var LOG_KEY = "shift-logs-v2";
   var POLL_MS = 20000;
   var LOG_TTL_MS = 24*60*60*1000;
@@ -328,7 +367,9 @@
       statusBox=$("status"), statusText=$("statusText"),
       tabRecords=$("tab-records"), tabLogs=$("tab-logs"),
       paneRecords=$("pane-records"), paneLogs=$("pane-logs"),
-      counts=$("counts"), themeBtn=$("themeBtn"), exportBtn=$("exportBtn"), notifyBtn=$("notifyBtn"), miniBtn=$("miniBtn");
+      counts=$("counts"), themeBtn=$("themeBtn"), exportBtn=$("exportBtn"), notifyBtn=$("notifyBtn"), miniBtn=$("miniBtn"),
+      board=$("board"), boardHead=$("boardHead"), boardText=$("boardText"), boardDate=$("boardDate"),
+      boardStatus=$("boardStatus"), boardClear=$("boardClear"), boardToggle=$("boardToggle");
   var SHIFT_COLOR={ "早班":"var(--zao)", "中班":"var(--zhong)", "晚班":"var(--wan)" };
 
   /* ===== 深色模式（僅本裝置，不影響他人） ===== */
@@ -377,7 +418,7 @@
   function checkNotify(){
     var now=Date.now(), active={};
     records.forEach(function(r){
-      if(isArchived(r)) return;
+      if(isBoard(r)||isArchived(r)) return;
       var ps=parseStatus(r.status);
       if(ps.base==="已給資料" && ps.at && (now-ps.at)>=WARN_MS && !r.handler){
         active[r.id]=true;
@@ -392,13 +433,16 @@
   var pipWin=null, miniPanel=null, miniBar=null, miniColor=null, miniAddBox=null, miniAudioCtx=null, miniPrevChase={}, miniPrimed=false, miniEditingId=null;
   var URGENT_MS=30*60*1000;
   var MINI_FONT_KEY="shift-mini-fs", MINI_SOUND_KEY="shift-mini-sound", MINI_COLLAPSE_KEY="shift-mini-collapse", MINI_SIZE_KEY="shift-mini-size";
+  var PALETTE=["#14161c","#16233a","#13261d","#241a12","#2a1620","#1b1a2e","#0a0a0a","#f2f0e9"]; // 精選：石墨/午夜藍/墨綠/暖褐/酒紅/靛紫/純黑/象牙白
   var MINI_CSS=
     "*{box-sizing:border-box;margin:0;font-family:'PingFang TC','Microsoft JhengHei',sans-serif;}"+
     ":root{--mbg:#1a1c22;--mfg:#e8e8ec;--msub:#9a9aa6;--mcard:rgba(255,255,255,.07);--mline:rgba(255,255,255,.15);--mfs:12.5px;}"+
     "body{background:var(--mbg);color:var(--mfg);padding:8px;}"+
     ".m-bar{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--msub);margin-bottom:6px;flex-wrap:wrap;}"+
-    ".mb-lbl{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--mline);border-radius:5px;padding:2px 5px;}"+
-    ".m-bar input.mb-color{width:22px;height:16px;border:none;background:none;padding:0;cursor:pointer;}"+
+    ".mb-lbl{display:inline-flex;align-items:center;gap:5px;}"+
+    ".mb-sws{display:inline-flex;gap:5px;}"+
+    ".mb-sw{width:17px;height:17px;border-radius:50%;border:none;cursor:pointer;padding:0;box-shadow:0 0 0 1px rgba(128,128,128,.4);}"+
+    ".mb-sw.active{outline:2px solid var(--mfg);outline-offset:1px;}"+
     ".mb-btn{background:transparent;border:1px solid var(--mline);color:inherit;font-size:11px;padding:2px 7px;border-radius:5px;cursor:pointer;line-height:1.5;}"+
     ".mb-time{margin-left:auto;font-size:10px;color:var(--msub);white-space:nowrap;}"+
     ".m-addbox{display:flex;gap:6px;margin-bottom:8px;}"+
@@ -410,6 +454,7 @@
     ".m-i{background:var(--mcard);border-radius:7px;padding:7px 9px;margin-bottom:5px;border-left:3px solid var(--mline);}"+
     ".m-i.warn{border-left-color:#e0655c;background:rgba(224,101,92,.16);animation:mb 1.1s ease-in-out infinite;}"+
     ".m-i.urgent{border-left-color:#ff3b30;animation:mbu .6s ease-in-out infinite;}"+
+    ".m-i.mpin{border-left-color:#e0912f;box-shadow:0 0 0 1px rgba(224,145,47,.5) inset;}"+
     "@keyframes mb{0%,100%{background:rgba(224,101,92,.12);}50%{background:rgba(224,101,92,.32);}}"+
     "@keyframes mbu{0%,100%{background:rgba(255,59,48,.18);}50%{background:rgba(255,59,48,.44);}}"+
     ".m-row{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;}"+
@@ -433,7 +478,7 @@
     ".ordno.copied{color:#6fcf97;border-bottom-color:transparent;}"+
     ".m-empty{color:var(--msub);font-size:13px;text-align:center;padding:22px 0;}";
   var MINI_BG_KEY="shift-mini-bg";
-  function loadMiniBg(){ try{ return localStorage.getItem(MINI_BG_KEY) || "#1a1c22"; }catch(e){ return "#1a1c22"; } }
+  function loadMiniBg(){ try{ return localStorage.getItem(MINI_BG_KEY) || "#14161c"; }catch(e){ return "#14161c"; } }
   function saveMiniBg(v){ try{ localStorage.setItem(MINI_BG_KEY, v); }catch(e){} }
   function isLight(hex){ var c=String(hex).replace("#",""); if(c.length!==6) return false;
     var r=parseInt(c.substr(0,2),16),g=parseInt(c.substr(2,2),16),b=parseInt(c.substr(4,2),16);
@@ -446,6 +491,7 @@
     root.style.setProperty("--msub", light?"#6b6b78":"#9a9aa6");
     root.style.setProperty("--mcard", light?"rgba(0,0,0,.05)":"rgba(255,255,255,.07)");
     root.style.setProperty("--mline", light?"rgba(0,0,0,.15)":"rgba(255,255,255,.15)");
+    if(miniBar){ var sws=miniBar.querySelectorAll(".mb-sw"); Array.prototype.forEach.call(sws, function(s){ s.classList.toggle("active", s.dataset.bg===bg); }); }
   }
   function loadMiniFont(){ var v=parseFloat(localStorage.getItem(MINI_FONT_KEY)); return (v>=10&&v<=20)?v:12.5; }
   function setMiniFont(v){ v=Math.max(10,Math.min(20,v)); try{localStorage.setItem(MINI_FONT_KEY,String(v));}catch(e){} applyMiniFont(); }
@@ -481,6 +527,8 @@
       else if(act==="collapse") toggleMiniCollapse();
       return;
     }
+    var sw=e.target.closest(".mb-sw");
+    if(sw){ saveMiniBg(sw.dataset.bg); applyMiniTheme(sw.dataset.bg); return; }
     var ord=e.target.closest(".ordno");
     if(ord){ copyText(ord.dataset.copy, ord); return; }
     var addb=e.target.closest(".m-addbtn");
@@ -498,6 +546,8 @@
       return;
     }
     if(!current) return;
+    var pin=e.target.closest(".m-pin");
+    if(pin){ var rp=findRec(pin.dataset.id); if(rp) updateField(pin.dataset.id,"pinned", isPinned(rp)?"":"1"); return; }
     var revert=e.target.closest(".m-revert");
     if(revert){ updateField(revert.dataset.id, "status", "待處理"); return; }
     var give=e.target.closest(".m-give");
@@ -575,18 +625,20 @@
     if(!miniPanel) return;
     var now=Date.now(), todo=[], given=[];
     records.forEach(function(r){
-      if(isArchived(r)) return;
+      if(isBoard(r)||isArchived(r)) return;
       var ps=parseStatus(r.status);
       if(ps.base==="待處理") todo.push(r);
       if(ps.base==="已給資料") given.push(r);
     });
-    // 未認領且超時的排最前，其餘按給資料時間
+    // 置頂最前，再未認領超時，其餘按給資料時間
     given.sort(function(a,b){
+      var na=isPinned(a)?0:1, nb=isPinned(b)?0:1; if(na!==nb) return na-nb;
       var pa=parseStatus(a.status), pb=parseStatus(b.status);
       var wa=(!a.handler && (now-pa.at)>=WARN_MS)?0:1, wb=(!b.handler && (now-pb.at)>=WARN_MS)?0:1;
       if(wa!==wb) return wa-wb;
       return pa.at - pb.at;
     });
+    todo.sort(function(a,b){ var na=isPinned(a)?0:1, nb=isPinned(b)?0:1; return na!==nb ? na-nb : b.time-a.time; });
     var chaseCount=0;
     // 提示音：新出現的「未認領超時」
     var curIds={}, isNew=false;
@@ -607,10 +659,11 @@
         if(r.id===miniEditingId){
           h+='<div class="m-i">'+editCell(r)+'</div>'; return;
         }
-        h+='<div class="m-i'+(chasing?' warn':'')+(urgent?' urgent':'')+'"><div class="m-row"><span class="m-txt">'+miniBody(r.content)+'</span><span class="m-age">已 '+fmtMin(age)+'</span></div>'+
+        h+='<div class="m-i'+(chasing?' warn':'')+(urgent?' urgent':'')+(isPinned(r)?' mpin':'')+'"><div class="m-row"><span class="m-txt">'+(isPinned(r)?'📌 ':'')+miniBody(r.content)+'</span><span class="m-age">已 '+fmtMin(age)+'</span></div>'+
            '<div class="m-sub">'+r.shift+' · '+esc(r.person)+'</div>'+
            claimCell(r)+
            '<div class="m-btns"><button class="m-revert" data-id="'+r.id+'">退回待處理</button>'+
+           '<button class="m-pin" data-id="'+r.id+'">'+(isPinned(r)?'取消置頂':'置頂')+'</button>'+
            '<button class="m-edit" data-id="'+r.id+'">編輯</button>'+
            '<button class="m-close" data-id="'+r.id+'">結案</button></div></div>';
       });
@@ -619,9 +672,10 @@
       h+='<div class="m-t">待處理</div>';
       todo.forEach(function(r){
         if(r.id===miniEditingId){ h+='<div class="m-i">'+editCell(r)+'</div>'; return; }
-        h+='<div class="m-i"><div class="m-row"><span class="m-txt">'+miniBody(r.content)+'</span></div>'+
+        h+='<div class="m-i'+(isPinned(r)?' mpin':'')+'"><div class="m-row"><span class="m-txt">'+(isPinned(r)?'📌 ':'')+miniBody(r.content)+'</span></div>'+
            '<div class="m-sub">'+r.shift+' · '+esc(r.person)+'</div>'+
            '<div class="m-btns"><button class="m-give" data-id="'+r.id+'">標記已給資料</button>'+
+           '<button class="m-pin" data-id="'+r.id+'">'+(isPinned(r)?'取消置頂':'置頂')+'</button>'+
            '<button class="m-edit" data-id="'+r.id+'">編輯</button>'+
            '<button class="m-close" data-id="'+r.id+'">結案</button></div></div>';
       });
@@ -638,15 +692,15 @@
     if(!miniBar){
       miniBar=document.createElement("div"); miniBar.className="m-bar";
       miniBar.innerHTML=
-        '<label class="mb-lbl" title="背景色">背景<input type="color" class="mb-color"></label>'+
+        '<span class="mb-lbl">背景<span class="mb-sws">'+
+          PALETTE.map(function(c){ return '<button class="mb-sw" data-bg="'+c+'" style="background:'+c+'"></button>'; }).join('')+
+        '</span></span>'+
         '<button class="mb-btn" data-mb="fs-" title="縮小字級">A-</button>'+
         '<button class="mb-btn" data-mb="fs+" title="放大字級">A+</button>'+
         '<button class="mb-btn" data-mb="refresh">🔄 更新</button>'+
         '<button class="mb-btn" data-mb="sound">🔕 音效關</button>'+
         '<button class="mb-btn" data-mb="collapse">▤ 收合待處理</button>'+
         '<span class="mb-time"></span>';
-      miniColor=miniBar.querySelector(".mb-color");
-      miniColor.value=loadMiniBg();
     }
     if(!miniAddBox){
       miniAddBox=document.createElement("div"); miniAddBox.className="m-addbox";
@@ -665,7 +719,7 @@
         pipWin.document.addEventListener("input", onMiniInput);
         pipWin.document.addEventListener("change", onMiniChange);
         pipWin.document.addEventListener("keydown", onMiniKey);
-        miniColor.value=loadMiniBg(); applyMiniTheme(loadMiniBg()); applyMiniFont(); refreshMiniBarBtns();
+        applyMiniTheme(loadMiniBg()); applyMiniFont(); refreshMiniBarBtns();
         miniPrevChase={}; miniPrimed=false; miniEditingId=null;
         pipWin.addEventListener("pagehide", function(){
           miniEditingId=null;
@@ -758,6 +812,9 @@
 
   /* ================= 新增 ================= */
   content.addEventListener("input", function(){ addBtn.disabled=content.value.trim()===""; });
+  content.addEventListener("keydown", function(e){
+    if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); if(!addBtn.disabled) addRecord(); }
+  });
   addBtn.addEventListener("click", addRecord);
   function summ(t){ t=t.replace(/\s+/g," ").trim(); return t.length>16 ? t.slice(0,16)+"…" : t; }
   function extractOrders(text){
@@ -768,7 +825,7 @@
   function findDuplicate(text){
     var orders=extractOrders(text), plain=text.trim();
     for(var i=0;i<records.length;i++){
-      var r=records[i]; if(isArchived(r)) continue;
+      var r=records[i]; if(isBoard(r)||isArchived(r)) continue;
       if(orders.length){
         var ro=extractOrders(r.content);
         for(var j=0;j<orders.length;j++){ if(ro.indexOf(orders[j])>=0) return { rec:r, order:orders[j] }; }
@@ -830,7 +887,8 @@
     if(field==="status")      logText="將「"+summ(r.content)+"」狀態改為 "+parseStatus(value).base;
     else if(field==="handler")logText="將「"+summ(r.content)+"」認領狀態改為 "+(value||"未指派");
     else if(field==="content")logText="修改事由「"+summ(r.content)+"」→「"+summ(value)+"」";
-    else if(field==="archived")logText=(value==="1"?"結案「":"還原「")+summ(r.content)+"」";
+    else if(field==="archived")logText=(value?"結案「":"還原「")+summ(r.content)+"」";
+    else if(field==="pinned")  logText=(value?"置頂「":"取消置頂「")+summ(r.content)+"」";
     else                      logText="更新「"+summ(r.content)+"」";
     if(USE_CLOUD){
       r[field]=value; renderAll();                            // 立即套用
@@ -868,7 +926,7 @@
   function purgeArchived(){
     if(!USE_CLOUD || syncing) return;
     var now=Date.now();
-    var expired=records.filter(function(r){ var t=archivedAt(r); return t && (now-t)>ARCHIVE_TTL_MS; });
+    var expired=records.filter(function(r){ if(isPinned(r)) return false; var t=archivedAt(r); return t && (now-t)>ARCHIVE_TTL_MS; });
     if(expired.length===0) return;
     var i=0;
     (function next(){
@@ -890,7 +948,7 @@
     logs=pruneLogs(logs); saveLocal(LOG_KEY,logs);
   }
   function pruneLogs(arr){ var now=Date.now(); return (arr||[]).filter(function(l){ return now-Number(l.time) <= LOG_TTL_MS; }); }
-  function pruneArchivedLocal(arr){ var now=Date.now(); return (arr||[]).filter(function(r){ var t=archivedAt(r); return !(t && (now-t)>ARCHIVE_TTL_MS); }); }
+  function pruneArchivedLocal(arr){ var now=Date.now(); return (arr||[]).filter(function(r){ if(isPinned(r)) return true; var t=archivedAt(r); return !(t && (now-t)>ARCHIVE_TTL_MS); }); }
 
   /* ================= 顯示 ================= */
   filter.addEventListener("change", renderRecords);
@@ -901,7 +959,59 @@
     requestAnimationFrame(function(){ t.classList.add("show"); });
     setTimeout(function(){ t.classList.remove("show"); setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 300); }, 1600);
   }
-  function renderAll(){ renderRecords(); renderLogs(); }
+  function renderAll(){ renderRecords(); renderLogs(); renderBoard(); }
+
+  /* ===== 今日公告欄（共用；存成特殊紀錄，不影響後端結構） ===== */
+  var boardEditing=false, boardTimer=null;
+  function isBoard(r){ return r && r.id===BOARD_ID; }
+  function getBoardRec(){ for(var i=0;i<records.length;i++){ if(records[i].id===BOARD_ID) return records[i]; } return null; }
+  function renderBoard(){
+    var d=new Date(), wk=["日","一","二","三","四","五","六"][d.getDay()];
+    boardDate.textContent=(d.getMonth()+1)+"月"+d.getDate()+"日 週"+wk;
+    if(boardEditing) return; // 有人正在打字就不覆蓋
+    var r=getBoardRec();
+    boardText.value = r ? r.content : "";
+  }
+  function flashBoard(msg){ boardStatus.textContent=msg; setTimeout(function(){ if(boardStatus.textContent===msg) boardStatus.textContent=""; }, 1500); }
+  function saveBoard(text){
+    if(!current) return;
+    var r=getBoardRec();
+    if(r){
+      r.content=text;
+      if(USE_CLOUD){ syncing=true; setStatus("cloud","同步中…");
+        cloudSend({action:"update", id:BOARD_ID, field:"content", value:text, byShift:current.shift, byPerson:current.person, log:"更新今日公告"}).then(applyRes).catch(syncErr);
+      }else{ saveLocal(REC_KEY,records); }
+    }else{
+      var rec={ id:BOARD_ID, content:text, shift:current.shift, person:current.person, time:Date.now(), status:"待處理", handler:"", pinned:"", archived:"" };
+      records.push(rec);
+      if(USE_CLOUD){ syncing=true; setStatus("cloud","同步中…");
+        cloudSend({action:"add", id:BOARD_ID, content:text, shift:rec.shift, person:rec.person, time:rec.time, status:rec.status, handler:"", log:"建立今日公告"}).then(applyRes).catch(syncErr);
+      }else{ saveLocal(REC_KEY,records); }
+    }
+    flashBoard("已儲存 ✓");
+  }
+  boardText.addEventListener("focus", function(){ boardEditing=true; });
+  boardText.addEventListener("blur", function(){
+    boardEditing=false;
+    var r=getBoardRec(), cur=(r?r.content:"");
+    if(boardText.value!==cur) saveBoard(boardText.value);
+  });
+  boardClear.addEventListener("click", function(e){
+    e.stopPropagation();
+    if(!confirm("確定清空今日公告？")) return;
+    boardText.value=""; saveBoard("");
+  });
+  boardToggle.addEventListener("click", function(e){ e.stopPropagation(); toggleBoard(); });
+  boardHead.addEventListener("click", function(e){ if(e.target.closest(".board-btn")) return; toggleBoard(); });
+  function toggleBoard(){
+    var on=!board.classList.contains("collapsed");
+    board.classList.toggle("collapsed", on);
+    boardToggle.textContent = on ? "展開" : "收合";
+    try{ localStorage.setItem("board-collapsed", on?"1":"0"); }catch(e){}
+  }
+  (function initBoardCollapse(){
+    if(localStorage.getItem("board-collapsed")==="1"){ board.classList.add("collapsed"); boardToggle.textContent="展開"; }
+  })();
 
   /* 事由裡「像訂單號的長串」自動變成可點擊複製 */
   function renderBody(bodyEl, text){
@@ -941,6 +1051,7 @@
 
   function isArchived(r){ var a=r.archived; return !!a && a!=="0"; }
   function archivedAt(r){ var t=Number(r.archived); return t>1e12 ? t : 0; } // 只認合理的時間戳
+  function isPinned(r){ var p=r.pinned; return !!p && p!=="0"; }
 
   function renderRecords(){
     var f=filter.value;
@@ -948,6 +1059,7 @@
     var q=(search.value||"").trim().toLowerCase();
     var now=Date.now();
     var shown=records.filter(function(r){
+      if(isBoard(r)) return false;
       if(viewArchived){ if(!isArchived(r)) return false; }
       else{ if(isArchived(r)) return false; if(f!=="all" && r.shift!==f) return false; }
       if(q){ if(r.content.toLowerCase().indexOf(q)<0) return false; }
@@ -958,23 +1070,24 @@
       }
       return true;
     });
+    if(!viewArchived) shown.sort(function(a,b){ var pa=isPinned(a)?0:1, pb=isPinned(b)?0:1; return pa!==pb ? pa-pb : b.time-a.time; });
     count.textContent="共 "+shown.length+" 筆";
     updateCounts();
     if(shown.length===0){
       var msg = viewArchived ? "目前沒有已結案的紀錄。"
               : (quickFilter==="chase" ? "目前沒有待跟催的紀錄 🎉"
               : (quickFilter==="todo" ? "目前沒有待處理的紀錄。"
-              : (records.filter(function(r){return !isArchived(r);}).length===0 ? "還沒有任何登記，於上方輸入後按「登記事項」。"
+              : (records.filter(function(r){return !isBoard(r) && !isArchived(r);}).length===0 ? "還沒有任何登記，於上方輸入後按「登記事項」。"
               : (q ? "找不到符合「"+search.value.trim()+"」的紀錄。" : "這個班別目前沒有紀錄。"))));
       list.innerHTML='<div class="empty"><div class="big">🔍</div>'+msg+'</div>';
       return;
     }
     list.innerHTML="";
     shown.forEach(function(r){
-      var el=document.createElement("div"); el.className="rec"; el.setAttribute("data-shift",r.shift);
+      var el=document.createElement("div"); el.className="rec"+(isPinned(r)?" pinned":""); el.setAttribute("data-shift",r.shift);
 
       var meta=document.createElement("div"); meta.className="rec-side";
-      meta.innerHTML='<span class="tag" data-shift="'+r.shift+'">'+r.shift+'</span><span class="rec-person"></span><span class="rec-time">'+fmt(r.time)+'</span>';
+      meta.innerHTML=(isPinned(r)?'<span class="pin-flag">📌</span>':'')+'<span class="tag" data-shift="'+r.shift+'">'+r.shift+'</span><span class="rec-person"></span><span class="rec-time">'+fmt(r.time)+'</span>';
       meta.querySelector(".rec-person").textContent=r.person;
 
       var body=document.createElement("div"); body.className="rec-body"; renderBody(body, r.content);
@@ -1017,13 +1130,15 @@
         del.addEventListener("click", function(){ delRecord(r.id); });
         acts.appendChild(restoreBtn); acts.appendChild(del);
       }else{
-        // 一般檢視：編輯 + 結案
+        // 一般檢視：置頂 + 編輯 + 結案
+        var pinBtn=document.createElement("button"); pinBtn.className="rec-pin"+(isPinned(r)?" on":""); pinBtn.textContent=isPinned(r)?"📌 取消置頂":"置頂";
+        pinBtn.addEventListener("click", function(){ updateField(r.id,"pinned", isPinned(r)?"":"1"); });
         var closeBtn=document.createElement("button"); closeBtn.className="rec-close"; closeBtn.textContent="結案";
         closeBtn.addEventListener("click", function(){
           if(!confirm("將這筆結案（歸檔）？之後可到「已結案」查看或還原。")) return;
           updateField(r.id,"archived",String(Date.now()));
         });
-        acts.appendChild(editBtn); acts.appendChild(closeBtn);
+        acts.appendChild(pinBtn); acts.appendChild(editBtn); acts.appendChild(closeBtn);
       }
 
       var main=document.createElement("div"); main.className="rec-main";
@@ -1077,7 +1192,7 @@
   function updateCounts(){
     var now=Date.now(), todo=0, chase=0;
     records.forEach(function(r){
-      if(isArchived(r)) return;
+      if(isBoard(r)||isArchived(r)) return;
       var ps=parseStatus(r.status);
       if(ps.base==="待處理") todo++;
       if(ps.base==="已給資料" && ps.at && (now-ps.at)>=WARN_MS && !r.handler) chase++;
@@ -1105,6 +1220,7 @@
   function exportToday(){
     var now=new Date(), y=now.getFullYear(), m=now.getMonth(), d=now.getDate();
     var todays=records.filter(function(r){
+      if(isBoard(r)) return false;
       var t=new Date(r.time); return t.getFullYear()===y && t.getMonth()===m && t.getDate()===d;
     });
     if(todays.length===0){ alert("今天還沒有任何登記紀錄。"); return; }
