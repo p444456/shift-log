@@ -179,19 +179,27 @@
   .rec-rem.due{color:var(--danger);font-weight:700;}
   .rec-dismiss{flex:none;background:var(--warn);border:none;color:#fff;font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;cursor:pointer;}
   .cbadge.due{background:#fff;color:var(--warn);}
-  .rec-side{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:82px;}
+  .rec-side{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:92px;max-width:150px;}
+  .person-row{display:flex;align-items:center;gap:3px;flex-wrap:wrap;}
+  .icon-btn{background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;border-radius:6px;line-height:1;opacity:.5;transition:.12s;}
+  .icon-btn:hover{opacity:1;background:var(--card2);}
+  .icon-btn.on{opacity:1;}
+  .icon-btn.rem.due{opacity:1;animation:iconblink 1s ease-in-out infinite;}
+  @keyframes iconblink{50%{opacity:.25;}}
+  .icon-btn.dis{color:var(--warn);opacity:1;font-weight:800;}
   .tag{font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:999px;color:#fff;letter-spacing:.06em;}
   .tag[data-shift="早班"]{background:var(--zao);}
   .tag[data-shift="中班"]{background:var(--zhong);}
   .tag[data-shift="晚班"]{background:var(--wan);}
   .rec-person{font-size:13.5px;font-weight:700;color:var(--ink);}
   .rec-time{font-size:11px;color:var(--ink3);letter-spacing:.02em;}
-  .rec-main{flex:1;min-width:0;display:flex;align-items:center;gap:14px;}
-  .rec-body{flex:1;min-width:0;font-size:15.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word;line-height:1.5;}
+  .rec-main{flex:1;min-width:0;display:flex;align-items:center;gap:10px 12px;flex-wrap:wrap;}
+  .rec-body{flex:1 1 260px;min-width:200px;font-size:15.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word;line-height:1.5;}
+  .rec-fields{flex:0 0 auto;}
   .ordno{color:var(--brand);font-weight:700;cursor:pointer;border-bottom:1px dashed currentColor;}
   .ordno:hover{background:var(--brand-soft,rgba(160,88,67,.1));border-radius:3px;}
   .ordno.copied{color:var(--ok);border-bottom-color:transparent;}
-  .rec-fields{flex:none;display:flex;gap:9px;align-items:center;}
+  .rec-fields{flex:none;display:flex;gap:9px;align-items:center;flex-wrap:wrap;}
   .minifield{display:flex;align-items:center;gap:6px;}
   .minifield .k{font-size:12px;color:var(--ink-soft);}
   .pick{appearance:none;border:1px solid transparent;border-radius:999px;padding:6px 28px 6px 13px;font-size:12.5px;font-weight:700;background:var(--card2);color:var(--ink);cursor:pointer;letter-spacing:.02em;
@@ -201,7 +209,7 @@
   .pick.st-done{color:var(--st-done);background-color:color-mix(in srgb,var(--st-done) 13%,var(--card));}
   .pick.hs-doing{color:var(--st-doing);background-color:color-mix(in srgb,var(--st-doing) 13%,var(--card));}
   .pick.hs-supp{color:#fff;background-color:var(--danger);background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round'/></svg>");}
-  .rec-acts{flex:none;display:flex;gap:2px;align-items:center;}
+  .rec-acts{flex:none;display:flex;gap:2px;align-items:center;flex-wrap:wrap;}
   .rec-edit{flex:none;background:none;border:none;color:var(--brand);font-size:12.5px;font-weight:600;padding:5px 8px;border-radius:8px;cursor:pointer;}
   .rec-edit:hover{background:var(--card2);}
   .rec-pin{flex:none;background:none;border:none;color:var(--ink-soft);font-size:12.5px;padding:5px 8px;border-radius:8px;cursor:pointer;}
@@ -1178,7 +1186,9 @@
       var el=document.createElement("div"); el.className="rec"+(isPinned(r)?" pinned":""); el.setAttribute("data-shift",r.shift);
 
       var meta=document.createElement("div"); meta.className="rec-side";
-      meta.innerHTML=(isPinned(r)?'<span class="pin-flag">📌</span>':'')+'<span class="tag" data-shift="'+r.shift+'">'+r.shift+'</span><span class="rec-person"></span><span class="rec-time">'+fmt(r.time)+'</span>';
+      meta.innerHTML='<span class="tag" data-shift="'+r.shift+'">'+r.shift+'</span>'+
+        '<div class="person-row"><span class="rec-person"></span></div>'+
+        '<span class="rec-time">'+fmt(r.time)+'</span>';
       meta.querySelector(".rec-person").textContent=r.person;
 
       var body=document.createElement("div"); body.className="rec-body"; renderBody(body, r.content);
@@ -1222,20 +1232,22 @@
         del.addEventListener("click", function(){ delRecord(r.id); });
         acts.appendChild(restoreBtn); acts.appendChild(del);
       }else{
-        // 一般檢視：提醒 + 置頂 + 編輯 + 結案
-        var remBtn=document.createElement("button"); remBtn.className="rec-rem"+(hasRemind(r)?" on":"")+(isDue(r)?" due":"");
-        remBtn.textContent = isDue(r) ? ("⏰ "+fmtRemind(remindAt(r))+"（到點）") : (hasRemind(r) ? ("⏰ "+fmtRemind(remindAt(r))) : "⏰ 提醒");
+        // 提醒⏰、置頂📌 → 名字右邊的小圖示；編輯、結案在右
+        var pr=meta.querySelector(".person-row");
+        var remBtn=document.createElement("button"); remBtn.className="icon-btn rem"+(hasRemind(r)?" on":"")+(isDue(r)?" due":"");
+        remBtn.textContent="⏰"; remBtn.title=hasRemind(r)?("提醒："+fmtRemind(remindAt(r))+(isDue(r)?"（到點）":"")):"設定提醒";
         remBtn.addEventListener("click", function(){ openRemindPicker(r.id); });
-        var pinBtn=document.createElement("button"); pinBtn.className="rec-pin"+(isPinned(r)?" on":""); pinBtn.textContent=isPinned(r)?"📌 取消置頂":"置頂";
+        var pinBtn=document.createElement("button"); pinBtn.className="icon-btn pin"+(isPinned(r)?" on":"");
+        pinBtn.textContent="📌"; pinBtn.title=isPinned(r)?"取消置頂":"置頂";
         pinBtn.addEventListener("click", function(){ updateField(r.id,"pinned", isPinned(r)?"":"1"); });
+        pr.appendChild(remBtn); pr.appendChild(pinBtn);
+        if(isDue(r)){ var dis=document.createElement("button"); dis.className="icon-btn dis"; dis.textContent="✓"; dis.title="知道了（清除提醒）"; dis.addEventListener("click", function(){ updateField(r.id,"remind",""); }); pr.appendChild(dis); }
         var closeBtn=document.createElement("button"); closeBtn.className="rec-close"; closeBtn.textContent="結案";
         closeBtn.addEventListener("click", function(){
           if(!confirm("將這筆結案（歸檔）？之後可到「已結案」查看或還原。")) return;
           updateField(r.id,"archived",String(Date.now()));
         });
-        acts.appendChild(remBtn);
-        if(isDue(r)){ var dis=document.createElement("button"); dis.className="rec-dismiss"; dis.textContent="✓ 知道了"; dis.addEventListener("click", function(){ updateField(r.id,"remind",""); }); acts.appendChild(dis); }
-        acts.appendChild(pinBtn); acts.appendChild(editBtn); acts.appendChild(closeBtn);
+        acts.appendChild(editBtn); acts.appendChild(closeBtn);
       }
 
       var main=document.createElement("div"); main.className="rec-main";
